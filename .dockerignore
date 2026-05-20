@@ -1,0 +1,57 @@
+# Version control
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Database (mounted via volumes, not baked into image)
+*.db
+*.duckdb
+
+# Data files (generated at runtime, stored in volumes)
+data/*.parquet
+data/*.csv
+
+# AI model cache (large, mounted via volume)
+.cache/
+*.bin
+*.gguf
+*.safetensors
+
+# Docker
+docker/
+
+# Documentation
+docs/
+
+# Sisyphus
+.sisyphus/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment (secrets, never bake into image)
+.env
+.env.local
+
+# Node
+node_modules/
