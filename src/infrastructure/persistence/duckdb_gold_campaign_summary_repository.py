@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.gold_campaign_summary import GoldCampaignSummary
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -128,11 +131,15 @@ class DuckDBGoldCampaignSummaryRepository:
 
     def save(self, summary: GoldCampaignSummary) -> GoldCampaignSummary:
         self._conn.execute(
+            f"DELETE FROM {_TABLE} WHERE search_request_id = ?",  # noqa: S608
+            [str(summary.search_request_id)],
+        )
+        self._conn.execute(
             f"""
-            INSERT OR REPLACE INTO {_TABLE}
+            INSERT INTO {_TABLE}
                 ({_INSERT_COLUMNS})
             VALUES ({",".join(["?"] * 20)})
-            """,
+            """,  # noqa: S608
             list(_summary_to_params(summary)),
         )
         logger.debug(
@@ -148,7 +155,7 @@ class DuckDBGoldCampaignSummaryRepository:
             SELECT {_SELECT_COLUMNS}
             FROM {_TABLE}
             WHERE search_request_id = ?
-            """,
+            """,  # noqa: S608
             [search_request_id],
         ).fetchone()
         if row is None:
@@ -161,6 +168,6 @@ class DuckDBGoldCampaignSummaryRepository:
             SELECT {_SELECT_COLUMNS}
             FROM {_TABLE}
             ORDER BY created_at DESC
-            """,
+            """,  # noqa: S608
         ).fetchall()
         return [_row_to_gold_campaign_summary(row) for row in rows]

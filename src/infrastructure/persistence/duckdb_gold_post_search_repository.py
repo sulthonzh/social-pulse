@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.gold_post_search import GoldPostSearch
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -136,7 +139,7 @@ class DuckDBGoldPostSearchRepository:
         placeholders = ",".join(["?"] * len(ids))
 
         before_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
             ids,
         ).fetchone()
         count_before = int(str(before_row[0])) if before_row is not None else 0
@@ -147,12 +150,12 @@ class DuckDBGoldPostSearchRepository:
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
             VALUES ({",".join(["?"] * 21)})
-            """,
+            """,  # noqa: S608
             params,
         )
 
         after_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
             ids,
         ).fetchone()
         count_after = int(str(after_row[0])) if after_row is not None else 0
@@ -173,14 +176,14 @@ class DuckDBGoldPostSearchRepository:
             WHERE keyword = ?
             ORDER BY posted_at DESC
             LIMIT ? OFFSET ?
-            """,
+            """,  # noqa: S608
             [keyword, limit, offset],
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
 
     def count_by_keyword(self, keyword: str) -> int:
         result_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE keyword = ?",
+            f"SELECT count(*) FROM {_TABLE} WHERE keyword = ?",  # noqa: S608
             [keyword],
         ).fetchone()
         return int(str(result_row[0])) if result_row is not None else 0
@@ -193,7 +196,7 @@ class DuckDBGoldPostSearchRepository:
             WHERE keyword = ?
             GROUP BY sentiment
             ORDER BY cnt DESC
-            """,
+            """,  # noqa: S608
             [keyword],
         ).fetchall()
         return [
@@ -241,7 +244,7 @@ class DuckDBGoldPostSearchRepository:
             WHERE {where}
             ORDER BY posted_at DESC
             LIMIT ? OFFSET ?
-            """,
+            """,  # noqa: S608
             params,
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
@@ -253,7 +256,7 @@ class DuckDBGoldPostSearchRepository:
             FROM {_TABLE}
             WHERE search_request_id = ?
             ORDER BY posted_at DESC
-            """,
+            """,  # noqa: S608
             [search_request_id],
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
