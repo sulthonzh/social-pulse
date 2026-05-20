@@ -1,0 +1,36 @@
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: test
+    volumes:
+      - ../tests:/app/tests
+      - ../src:/app/src
+    environment:
+      - PYTHONPATH=/app
+      - SOCIALPULSE_ENV=test
+    command: pytest --tb=short -v --cov=src --cov-report=term-missing
+
+  lint:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: test
+    volumes:
+      - ../src:/app/src
+    command: ruff check src/ && mypy src/
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=development
+    command: streamlit run src/presentation/app.py --server.port=8501 --server.address=0.0.0.0
