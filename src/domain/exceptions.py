@@ -19,3 +19,11 @@ class CrawlError(SocialPulseError):
 
 class DuplicateError(SocialPulseError):
     """Raised when a duplicate entity is detected."""
+
+
+class EnrichmentError(SocialPulseError):
+    """Raised when AI enrichment fails."""
+
+
+class AIJobError(SocialPulseError):
+    """Raised when an AI job fails."""
