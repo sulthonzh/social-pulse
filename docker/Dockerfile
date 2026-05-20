@@ -1,37 +1,61 @@
+# ============================================================
+# SocialPulse — Multi-stage Dockerfile (uv-based)
+#
+# Targets: base, test, lint, runtime, worker, gold-builder
+# Usage:
+#   docker compose build app
+#   docker compose --profile ci run --rm test
+#   docker compose --profile ci run --rm lint
+#   docker compose --profile pipeline up -d
+# ============================================================
+
+# ---- Base: Python + uv ----
 FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Install uv from official image (fast Rust-based package manager)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+# Copy source + manifest together — hatchling needs src/ for editable install
+COPY pyproject.toml ./
 COPY src/ src/
 
-RUN pip install --no-cache-dir ".[dev]"
+# Install all deps + project itself (production + dev)
+RUN uv sync --all-extras --dev
 
+# ---- Test ----
 FROM base AS test
 
 COPY tests/ tests/
-COPY docker/ docker/
 
-CMD ["pytest", "--tb=short", "-v"]
+CMD ["uv", "run", "pytest", "--tb=short", "-v"]
 
+# ---- Lint ----
 FROM base AS lint
 
-CMD ["sh", "-c", "ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/"]
+COPY tests/ tests/
 
+CMD ["sh", "-c", "uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv run mypy src/"]
+
+# ---- Runtime (Streamlit app) ----
 FROM base AS runtime
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "src/presentation/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["uv", "run", "streamlit", "run", "src/presentation/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 
+# ---- Worker (AI enrichment) ----
 FROM base AS worker
 
-CMD ["python", "-m", "src.infrastructure.ai.worker"]
+CMD ["uv", "run", "python", "-m", "src.infrastructure.ai.worker"]
 
+# ---- Gold Builder ----
 FROM base AS gold-builder
 
-CMD ["python", "-m", "src.infrastructure.gold.builder"]
+CMD ["uv", "run", "python", "-m", "src.infrastructure.gold.builder"]
