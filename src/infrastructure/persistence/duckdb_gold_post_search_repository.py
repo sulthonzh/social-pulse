@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import structlog
@@ -45,8 +46,9 @@ def _resolve_str(raw: object) -> str | None:
 def _resolve_str_list(raw: object) -> list[str]:
     if raw is None:
         return []
-    if isinstance(raw, list):
-        return [str(item) for item in raw]
+    if isinstance(raw, Sequence) and not isinstance(raw, str):
+        items = cast("Sequence[object]", raw)
+        return [str(item) for item in items]
     return []
 
 
@@ -96,7 +98,7 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         reply_count=int(str(raw_reply_count)),
         view_count=int(str(raw_view_count)),
         ai_version=int(str(raw_ai_version)),
-        created_at=_resolve_datetime(raw_created_at) if raw_created_at is not None else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
 
@@ -188,7 +190,7 @@ class DuckDBGoldPostSearchRepository:
         ).fetchone()
         return int(str(result_row[0])) if result_row is not None else 0
 
-    def get_sentiment_breakdown(self, keyword: str) -> list[dict]:
+    def get_sentiment_breakdown(self, keyword: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             f"""
             SELECT sentiment, count(*) as cnt

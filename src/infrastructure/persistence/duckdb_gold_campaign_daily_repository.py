@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import structlog
@@ -43,15 +44,12 @@ def _resolve_datetime(raw: object) -> datetime | None:
     return raw if isinstance(raw, datetime) else datetime.fromisoformat(str(raw))
 
 
-def _resolve_str(raw: object) -> str | None:
-    return str(raw) if raw is not None else None
-
-
 def _resolve_str_list(raw: object) -> list[str]:
     if raw is None:
         return []
-    if isinstance(raw, list):
-        return [str(item) for item in raw]
+    if isinstance(raw, Sequence) and not isinstance(raw, str):
+        items = cast("Sequence[object]", raw)
+        return [str(item) for item in items]
     return []
 
 
@@ -95,7 +93,7 @@ def _row_to_gold_campaign_daily(row: tuple[object, ...]) -> GoldCampaignDaily:
         total_replies=int(str(raw_total_replies)),
         total_views=int(str(raw_total_views)),
         ai_version=int(str(raw_ai_version)),
-        created_at=_resolve_datetime(raw_created_at) if raw_created_at is not None else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
 
@@ -176,7 +174,7 @@ class DuckDBGoldCampaignDailyRepository:
         ).fetchall()
         return [_row_to_gold_campaign_daily(row) for row in rows]
 
-    def get_volume_trend(self, keyword: str) -> list[dict]:
+    def get_volume_trend(self, keyword: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             f"""
             SELECT date, total_posts
