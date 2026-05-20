@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -9,9 +10,12 @@ from src.application.use_cases.build_campaign_daily import BuildCampaignDaily
 from src.domain.entities.gold_post_search import GoldPostSearch
 from src.domain.value_objects.platform import Platform
 
+if TYPE_CHECKING:
+    from src.domain.entities.gold_campaign_daily import GoldCampaignDaily
 
-def _make_gold_post(**overrides) -> GoldPostSearch:
-    defaults = {
+
+def _make_gold_post(**overrides: object) -> GoldPostSearch:
+    defaults: dict[str, object] = {
         "search_request_id": uuid4(),
         "keyword": "python",
         "platform": Platform.TWITTER,
@@ -26,7 +30,7 @@ def _make_gold_post(**overrides) -> GoldPostSearch:
         "view_count": 100,
     }
     defaults.update(overrides)
-    return GoldPostSearch(**defaults)
+    return GoldPostSearch.model_validate(defaults)
 
 
 def _build_use_case():
@@ -60,7 +64,7 @@ class TestBuildCampaignDaily:
         result = await use_case.execute(str(search_request_id))
 
         assert result == 2
-        records = daily_repo.save_batch.call_args[0][0]
+        records: list[GoldCampaignDaily] = daily_repo.save_batch.call_args[0][0]
         assert len(records) == 2
         first_day = next(r for r in records if r.date.isoformat() == "2025-01-15")
         assert first_day.total_posts == 2
@@ -86,7 +90,7 @@ class TestBuildCampaignDaily:
         result = await use_case.execute(str(search_request_id))
 
         assert result == 1
-        records = daily_repo.save_batch.call_args[0][0]
+        records: list[GoldCampaignDaily] = daily_repo.save_batch.call_args[0][0]
         assert len(records) == 1
 
     async def test_execute_returns_zero_when_no_posts(self):

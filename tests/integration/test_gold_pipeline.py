@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from uuid import uuid4
+from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
 
 import pytest
 from src.application.use_cases.build_campaign_daily import BuildCampaignDaily
@@ -27,8 +28,15 @@ from src.infrastructure.persistence.duckdb_gold_post_search_repository import (
     DuckDBGoldPostSearchRepository,
 )
 
+if TYPE_CHECKING:
+    import duckdb
 
-def _make_enriched_post(search_request_id, posted_at, platform=Platform.TWITTER) -> EnrichedPost:
+
+def _make_enriched_post(
+    search_request_id: UUID,
+    posted_at: datetime,
+    platform: Platform = Platform.TWITTER,
+) -> EnrichedPost:
     return EnrichedPost(
         bronze_post_id=uuid4(),
         search_request_id=search_request_id,
@@ -46,7 +54,12 @@ def _make_enriched_post(search_request_id, posted_at, platform=Platform.TWITTER)
     )
 
 
-def _make_ai_enrichment(post_id, sentiment, hashtags, topic="technology") -> AIEnrichment:
+def _make_ai_enrichment(
+    post_id: UUID,
+    sentiment: SentimentLabel,
+    hashtags: list[str],
+    topic: str = "technology",
+) -> AIEnrichment:
     return AIEnrichment(
         silver_post_id=post_id,
         hashtags=hashtags,
@@ -59,7 +72,9 @@ def _make_ai_enrichment(post_id, sentiment, hashtags, topic="technology") -> AIE
 
 
 @pytest.mark.integration
-async def test_gold_pipeline_materializes_daily_and_summary(db_with_schema):
+async def test_gold_pipeline_materializes_daily_and_summary(
+    db_with_schema: duckdb.DuckDBPyConnection,
+):
     enriched_repo = DuckDBEnrichedPostRepository(db_with_schema)
     ai_repo = DuckDBAIEnrichmentRepository(db_with_schema)
     post_search_repo = DuckDBGoldPostSearchRepository(db_with_schema)

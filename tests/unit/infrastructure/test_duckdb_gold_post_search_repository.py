@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
@@ -10,9 +11,12 @@ from src.infrastructure.persistence.duckdb_gold_post_search_repository import (
     DuckDBGoldPostSearchRepository,
 )
 
+if TYPE_CHECKING:
+    import duckdb
 
-def _make_gold_post(**overrides) -> GoldPostSearch:
-    defaults = {
+
+def _make_gold_post(**overrides: object) -> GoldPostSearch:
+    defaults: dict[str, object] = {
         "id": uuid4(),
         "search_request_id": uuid4(),
         "keyword": "python",
@@ -36,29 +40,29 @@ def _make_gold_post(**overrides) -> GoldPostSearch:
         "created_at": datetime(2025, 1, 15, 12, 0, 0),
     }
     defaults.update(overrides)
-    return GoldPostSearch(**defaults)
+    return GoldPostSearch.model_validate(defaults)
 
 
 @pytest.mark.unit
 class TestDuckDBGoldPostSearchRepository:
 
-    def test_save_batch_returns_correct_count(self, db_with_schema):
+    def test_save_batch_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post() for _ in range(3)]
         inserted = repo.save_batch(posts)
         assert inserted == 3
 
-    def test_save_batch_empty_returns_zero(self, db_with_schema):
+    def test_save_batch_empty_returns_zero(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.save_batch([]) == 0
 
-    def test_save_batch_duplicate_returns_zero(self, db_with_schema):
+    def test_save_batch_duplicate_returns_zero(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         post = _make_gold_post()
         assert repo.save_batch([post]) == 1
         assert repo.save_batch([post]) == 0
 
-    def test_get_by_keyword_returns_matching_results(self, db_with_schema):
+    def test_get_by_keyword_returns_matching_results(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         sr_id = uuid4()
         posts = [_make_gold_post(keyword="python", search_request_id=sr_id) for _ in range(3)]
@@ -68,21 +72,21 @@ class TestDuckDBGoldPostSearchRepository:
         results = repo.get_by_keyword("python")
         assert len(results) == 3
 
-    def test_get_by_keyword_returns_empty_for_nonexistent(self, db_with_schema):
+    def test_get_by_keyword_returns_empty_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.get_by_keyword("nonexistent") == []
 
-    def test_count_by_keyword_returns_correct_count(self, db_with_schema):
+    def test_count_by_keyword_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post(keyword="python") for _ in range(5)]
         repo.save_batch(posts)
         assert repo.count_by_keyword("python") == 5
 
-    def test_count_by_keyword_returns_zero_for_nonexistent(self, db_with_schema):
+    def test_count_by_keyword_returns_zero_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.count_by_keyword("nonexistent") == 0
 
-    def test_get_sentiment_breakdown(self, db_with_schema):
+    def test_get_sentiment_breakdown(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="python", sentiment="positive"),
@@ -97,7 +101,7 @@ class TestDuckDBGoldPostSearchRepository:
         assert by_sentiment["positive"] == 2
         assert by_sentiment["negative"] == 1
 
-    def test_get_filtered_by_sentiment(self, db_with_schema):
+    def test_get_filtered_by_sentiment(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="python", sentiment="positive"),
@@ -109,7 +113,7 @@ class TestDuckDBGoldPostSearchRepository:
         assert len(results) == 1
         assert results[0].sentiment == "positive"
 
-    def test_get_filtered_by_platform(self, db_with_schema):
+    def test_get_filtered_by_platform(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="python", platform=Platform.TWITTER),
@@ -121,7 +125,7 @@ class TestDuckDBGoldPostSearchRepository:
         assert len(results) == 1
         assert results[0].platform == Platform.TWITTER
 
-    def test_get_filtered_by_language(self, db_with_schema):
+    def test_get_filtered_by_language(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="python", language="en"),
@@ -133,7 +137,7 @@ class TestDuckDBGoldPostSearchRepository:
         assert len(results) == 1
         assert results[0].language == "en"
 
-    def test_get_by_search_request_returns_matching(self, db_with_schema):
+    def test_get_by_search_request_returns_matching(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         sr_id = uuid4()
         posts = [_make_gold_post(search_request_id=sr_id) for _ in range(3)]
@@ -142,11 +146,11 @@ class TestDuckDBGoldPostSearchRepository:
         results = repo.get_by_search_request(str(sr_id))
         assert len(results) == 3
 
-    def test_get_by_search_request_returns_empty_for_nonexistent(self, db_with_schema):
+    def test_get_by_search_request_returns_empty_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) == []
 
-    def test_round_trip_all_fields_match(self, db_with_schema):
+    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         post = _make_gold_post(
             platform=Platform.TWITTER,

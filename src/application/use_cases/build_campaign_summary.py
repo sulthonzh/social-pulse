@@ -8,6 +8,8 @@ import structlog
 from src.domain.entities.gold_campaign_summary import GoldCampaignSummary
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from src.domain.interfaces import (
         GoldCampaignSummaryRepository,
         GoldPostSearchRepository,
@@ -31,7 +33,12 @@ class BuildCampaignSummary:
         self._gold_post_search_repo = gold_post_search_repo
         self._gold_summary_repo = gold_summary_repo
 
-    async def execute(self, search_request_id: str, start_date, end_date) -> GoldCampaignSummary:
+    async def execute(
+        self,
+        search_request_id: str,
+        start_date: date,
+        end_date: date,
+    ) -> GoldCampaignSummary:
         posts = self._gold_post_search_repo.get_by_search_request(search_request_id)
 
         total = len(posts)

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from src.application.use_cases.build_post_search import BuildPostSearch
@@ -11,9 +12,12 @@ from src.domain.entities.enriched_post import EnrichedPost
 from src.domain.value_objects.platform import Platform
 from src.domain.value_objects.sentiment_label import SentimentLabel
 
+if TYPE_CHECKING:
+    from src.domain.entities.gold_post_search import GoldPostSearch
 
-def _make_enriched_post(**overrides) -> EnrichedPost:
-    defaults = {
+
+def _make_enriched_post(**overrides: object) -> EnrichedPost:
+    defaults: dict[str, object] = {
         "id": uuid4(),
         "bronze_post_id": uuid4(),
         "search_request_id": uuid4(),
@@ -29,11 +33,11 @@ def _make_enriched_post(**overrides) -> EnrichedPost:
         "post_url": "https://x.com/data_nerd/status/123",
     }
     defaults.update(overrides)
-    return EnrichedPost(**defaults)
+    return EnrichedPost.model_validate(defaults)
 
 
-def _make_ai_enrichment(post_id, **overrides) -> AIEnrichment:
-    defaults = {
+def _make_ai_enrichment(post_id: UUID, **overrides: object) -> AIEnrichment:
+    defaults: dict[str, object] = {
         "silver_post_id": post_id,
         "hashtags": ["data", "engineering"],
         "mentions": ["@friend"],
@@ -43,7 +47,7 @@ def _make_ai_enrichment(post_id, **overrides) -> AIEnrichment:
         "sentiment_confidence": 0.95,
     }
     defaults.update(overrides)
-    return AIEnrichment(**defaults)
+    return AIEnrichment.model_validate(defaults)
 
 
 def _build_use_case():
@@ -75,7 +79,7 @@ class TestBuildPostSearch:
         assert result == 1
         enriched_repo.get_by_search.assert_called_once_with(str(search_request_id))
         ai_repo.get_by_post.assert_called_once_with(str(post.id))
-        saved_posts = gold_repo.save_batch.call_args[0][0]
+        saved_posts: list[GoldPostSearch] = gold_repo.save_batch.call_args[0][0]
         assert len(saved_posts) == 1
         saved = saved_posts[0]
         assert saved.search_request_id == search_request_id
@@ -97,7 +101,8 @@ class TestBuildPostSearch:
         result = await use_case.execute(str(search_request_id), keyword="python")
 
         assert result == 1
-        saved = gold_repo.save_batch.call_args[0][0][0]
+        saved_posts: list[GoldPostSearch] = gold_repo.save_batch.call_args[0][0]
+        saved = saved_posts[0]
         assert saved.sentiment is None
         assert saved.hashtags == []
         assert saved.mentions == []

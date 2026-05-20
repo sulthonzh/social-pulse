@@ -11,6 +11,7 @@ from src.domain.value_objects.platform import Platform
 if TYPE_CHECKING:
     from datetime import date
 
+    from src.domain.entities.gold_post_search import GoldPostSearch
     from src.domain.interfaces import (
         GoldCampaignDailyRepository,
         GoldPostSearchRepository,
@@ -44,7 +45,7 @@ class BuildCampaignDaily:
             )
             return 0
 
-        by_date: dict[tuple[date, str], list[object]] = {}
+        by_date: dict[tuple[date, str], list[GoldPostSearch]] = {}
         for post in posts:
             if post.posted_at is None:
                 continue
@@ -54,7 +55,7 @@ class BuildCampaignDaily:
 
         records: list[GoldCampaignDaily] = []
         for (day, platform_str), day_posts in by_date.items():
-            typed_posts = list(day_posts)
+            typed_posts = day_posts
             positive = sum(1 for p in typed_posts if getattr(p, "sentiment", None) == "positive")
             negative = sum(1 for p in typed_posts if getattr(p, "sentiment", None) == "negative")
             neutral = sum(1 for p in typed_posts if getattr(p, "sentiment", None) == "neutral")

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -10,14 +9,14 @@ from src.domain.entities.gold_post_search import GoldPostSearch
 from src.domain.value_objects.platform import Platform
 
 
-def _make_post(**overrides: Any) -> GoldPostSearch:
-    defaults: dict[str, Any] = {
+def _make_post(**overrides: object) -> GoldPostSearch:
+    defaults: dict[str, object] = {
         "search_request_id": uuid4(),
         "keyword": "python",
         "platform": Platform.TWITTER,
     }
     defaults.update(overrides)
-    return GoldPostSearch(**defaults)
+    return GoldPostSearch.model_validate(defaults)
 
 
 @pytest.mark.unit
@@ -153,16 +152,19 @@ class TestGoldPostSearchExplicitValues:
 class TestGoldPostSearchRequiredFields:
 
     def test_search_request_id_is_required(self) -> None:
+        payload: dict[str, object] = {"keyword": "test", "platform": Platform.TWITTER}
         with pytest.raises(PydanticValidationError):
-            GoldPostSearch(keyword="test", platform=Platform.TWITTER)
+            GoldPostSearch.model_validate(payload)
 
     def test_keyword_is_required(self) -> None:
+        payload: dict[str, object] = {"search_request_id": uuid4(), "platform": Platform.TWITTER}
         with pytest.raises(PydanticValidationError):
-            GoldPostSearch(search_request_id=uuid4(), platform=Platform.TWITTER)
+            GoldPostSearch.model_validate(payload)
 
     def test_platform_is_required(self) -> None:
+        payload: dict[str, object] = {"search_request_id": uuid4(), "keyword": "test"}
         with pytest.raises(PydanticValidationError):
-            GoldPostSearch(search_request_id=uuid4(), keyword="test")
+            GoldPostSearch.model_validate(payload)
 
 
 @pytest.mark.unit
