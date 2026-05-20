@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.gold_campaign_daily import GoldCampaignDaily
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -132,7 +135,7 @@ class DuckDBGoldCampaignDailyRepository:
         placeholders = ",".join(["?"] * len(ids))
 
         before_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
             ids,
         ).fetchone()
         count_before = int(str(before_row[0])) if before_row is not None else 0
@@ -143,12 +146,12 @@ class DuckDBGoldCampaignDailyRepository:
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
             VALUES ({",".join(["?"] * 18)})
-            """,
+            """,  # noqa: S608
             params,
         )
 
         after_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
             ids,
         ).fetchone()
         count_after = int(str(after_row[0])) if after_row is not None else 0
@@ -168,7 +171,7 @@ class DuckDBGoldCampaignDailyRepository:
             FROM {_TABLE}
             WHERE search_request_id = ?
             ORDER BY date ASC
-            """,
+            """,  # noqa: S608
             [search_request_id],
         ).fetchall()
         return [_row_to_gold_campaign_daily(row) for row in rows]
@@ -180,7 +183,7 @@ class DuckDBGoldCampaignDailyRepository:
             FROM {_TABLE}
             WHERE keyword = ?
             ORDER BY date ASC
-            """,
+            """,  # noqa: S608
             [keyword],
         ).fetchall()
         return [
