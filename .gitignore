@@ -1,0 +1,47 @@
+# Sisyphus
+.sisyphus/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Database
+*.db
+*.duckdb
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# HuggingFace cache
+.cache/
+*.bin
+*.gguf
+*.safetensors
+
+# Node (if any tooling)
+node_modules/
+
+# Data files (generated at runtime)
+data/*.parquet
+data/*.csv
