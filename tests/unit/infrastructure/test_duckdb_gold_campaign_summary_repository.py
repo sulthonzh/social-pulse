@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import pytest
@@ -9,9 +10,12 @@ from src.infrastructure.persistence.duckdb_gold_campaign_summary_repository impo
     DuckDBGoldCampaignSummaryRepository,
 )
 
+if TYPE_CHECKING:
+    import duckdb
 
-def _make_summary(**overrides) -> GoldCampaignSummary:
-    defaults = {
+
+def _make_summary(**overrides: object) -> GoldCampaignSummary:
+    defaults: dict[str, object] = {
         "id": uuid4(),
         "search_request_id": uuid4(),
         "keyword": "python",
@@ -34,19 +38,19 @@ def _make_summary(**overrides) -> GoldCampaignSummary:
         "created_at": datetime(2025, 1, 31, 12, 0, 0),
     }
     defaults.update(overrides)
-    return GoldCampaignSummary(**defaults)
+    return GoldCampaignSummary.model_validate(defaults)
 
 
 @pytest.mark.unit
 class TestDuckDBGoldCampaignSummaryRepository:
 
-    def test_save_returns_entity_with_id(self, db_with_schema):
+    def test_save_returns_entity_with_id(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         result = repo.save(summary)
         assert result.id == summary.id
 
-    def test_get_by_search_request_returns_saved_entity(self, db_with_schema):
+    def test_get_by_search_request_returns_saved_entity(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         repo.save(summary)
@@ -55,11 +59,11 @@ class TestDuckDBGoldCampaignSummaryRepository:
         assert found is not None
         assert found.id == summary.id
 
-    def test_get_by_search_request_returns_none_for_nonexistent(self, db_with_schema):
+    def test_get_by_search_request_returns_none_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) is None
 
-    def test_get_all_summaries_returns_all(self, db_with_schema):
+    def test_get_all_summaries_returns_all(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summaries = [_make_summary() for _ in range(3)]
         for s in summaries:
@@ -68,7 +72,7 @@ class TestDuckDBGoldCampaignSummaryRepository:
         results = repo.get_all_summaries()
         assert len(results) == 3
 
-    def test_save_upserts_on_same_search_request_id(self, db_with_schema):
+    def test_save_upserts_on_same_search_request_id(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         sr_id = uuid4()
         original = _make_summary(search_request_id=sr_id, total_posts=50)
@@ -85,7 +89,7 @@ class TestDuckDBGoldCampaignSummaryRepository:
         sr_count = sum(1 for s in all_results if s.search_request_id == sr_id)
         assert sr_count == 1
 
-    def test_round_trip_all_fields_match(self, db_with_schema):
+    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         repo.save(summary)
@@ -101,7 +105,9 @@ class TestDuckDBGoldCampaignSummaryRepository:
         assert found.positive_pct == summary.positive_pct
         assert found.negative_pct == summary.negative_pct
         assert found.neutral_pct == summary.neutral_pct
-        assert found.avg_confidence == pytest.approx(summary.avg_confidence, abs=1e-6)
+        assert found.avg_confidence is not None
+        assert summary.avg_confidence is not None
+        assert abs(found.avg_confidence - summary.avg_confidence) < 1e-6
         assert found.total_engagement == summary.total_engagement
         assert found.total_likes == summary.total_likes
         assert found.total_shares == summary.total_shares

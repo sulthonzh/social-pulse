@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -10,15 +9,15 @@ from src.domain.entities.gold_campaign_daily import GoldCampaignDaily
 from src.domain.value_objects.platform import Platform
 
 
-def _make_daily(**overrides: Any) -> GoldCampaignDaily:
-    defaults: dict[str, Any] = {
+def _make_daily(**overrides: object) -> GoldCampaignDaily:
+    defaults: dict[str, object] = {
         "search_request_id": uuid4(),
         "keyword": "python",
         "platform": Platform.TWITTER,
         "date": date(2025, 1, 15),
     }
     defaults.update(overrides)
-    return GoldCampaignDaily(**defaults)
+    return GoldCampaignDaily.model_validate(defaults)
 
 
 @pytest.mark.unit
@@ -124,28 +123,40 @@ class TestGoldCampaignDailyExplicitValues:
 class TestGoldCampaignDailyRequiredFields:
 
     def test_search_request_id_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "keyword": "test",
+            "platform": Platform.TWITTER,
+            "date": date(2025, 1, 1),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignDaily(
-                keyword="test", platform=Platform.TWITTER, date=date(2025, 1, 1),
-            )
+            GoldCampaignDaily.model_validate(payload)
 
     def test_keyword_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "platform": Platform.TWITTER,
+            "date": date(2025, 1, 1),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignDaily(
-                search_request_id=uuid4(), platform=Platform.TWITTER, date=date(2025, 1, 1),
-            )
+            GoldCampaignDaily.model_validate(payload)
 
     def test_platform_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "keyword": "test",
+            "date": date(2025, 1, 1),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignDaily(
-                search_request_id=uuid4(), keyword="test", date=date(2025, 1, 1),
-            )
+            GoldCampaignDaily.model_validate(payload)
 
     def test_date_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "keyword": "test",
+            "platform": Platform.TWITTER,
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignDaily(
-                search_request_id=uuid4(), keyword="test", platform=Platform.TWITTER,
-            )
+            GoldCampaignDaily.model_validate(payload)
 
 
 @pytest.mark.unit

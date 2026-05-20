@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -9,9 +10,12 @@ from src.application.use_cases.build_campaign_summary import BuildCampaignSummar
 from src.domain.entities.gold_post_search import GoldPostSearch
 from src.domain.value_objects.platform import Platform
 
+if TYPE_CHECKING:
+    from src.domain.entities.gold_campaign_summary import GoldCampaignSummary
 
-def _make_gold_post(**overrides) -> GoldPostSearch:
-    defaults = {
+
+def _make_gold_post(**overrides: object) -> GoldPostSearch:
+    defaults: dict[str, object] = {
         "search_request_id": uuid4(),
         "keyword": "python",
         "platform": Platform.TWITTER,
@@ -26,7 +30,11 @@ def _make_gold_post(**overrides) -> GoldPostSearch:
         "view_count": 100,
     }
     defaults.update(overrides)
-    return GoldPostSearch(**defaults)
+    return GoldPostSearch.model_validate(defaults)
+
+
+def _return_summary(summary: GoldCampaignSummary) -> GoldCampaignSummary:
+    return summary
 
 
 def _build_use_case():
@@ -51,7 +59,7 @@ class TestBuildCampaignSummary:
             _make_gold_post(search_request_id=search_request_id, sentiment="neutral", platform=Platform.FACEBOOK),
         ]
         post_repo.get_by_search_request.return_value = posts
-        summary_repo.save.side_effect = lambda summary: summary
+        summary_repo.save.side_effect = _return_summary
 
         result = await use_case.execute(
             str(search_request_id),
@@ -81,7 +89,7 @@ class TestBuildCampaignSummary:
             _make_gold_post(search_request_id=search_request_id, sentiment_confidence=None),
         ]
         post_repo.get_by_search_request.return_value = posts
-        summary_repo.save.side_effect = lambda summary: summary
+        summary_repo.save.side_effect = _return_summary
 
         result = await use_case.execute(
             str(search_request_id),
@@ -94,7 +102,7 @@ class TestBuildCampaignSummary:
     async def test_execute_saves_empty_summary_when_no_posts(self):
         use_case, post_repo, summary_repo = _build_use_case()
         post_repo.get_by_search_request.return_value = []
-        summary_repo.save.side_effect = lambda summary: summary
+        summary_repo.save.side_effect = _return_summary
 
         result = await use_case.execute(
             str(uuid4()),

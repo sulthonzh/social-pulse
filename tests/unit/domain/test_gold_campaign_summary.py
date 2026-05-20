@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -9,15 +8,15 @@ from pydantic import ValidationError as PydanticValidationError
 from src.domain.entities.gold_campaign_summary import GoldCampaignSummary
 
 
-def _make_summary(**overrides: Any) -> GoldCampaignSummary:
-    defaults: dict[str, Any] = {
+def _make_summary(**overrides: object) -> GoldCampaignSummary:
+    defaults: dict[str, object] = {
         "search_request_id": uuid4(),
         "keyword": "python",
         "start_date": date(2025, 1, 1),
         "end_date": date(2025, 1, 31),
     }
     defaults.update(overrides)
-    return GoldCampaignSummary(**defaults)
+    return GoldCampaignSummary.model_validate(defaults)
 
 
 @pytest.mark.unit
@@ -140,28 +139,40 @@ class TestGoldCampaignSummaryExplicitValues:
 class TestGoldCampaignSummaryRequiredFields:
 
     def test_search_request_id_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "keyword": "test",
+            "start_date": date(2025, 1, 1),
+            "end_date": date(2025, 1, 31),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignSummary(
-                keyword="test", start_date=date(2025, 1, 1), end_date=date(2025, 1, 31),
-            )
+            GoldCampaignSummary.model_validate(payload)
 
     def test_keyword_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "start_date": date(2025, 1, 1),
+            "end_date": date(2025, 1, 31),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignSummary(
-                search_request_id=uuid4(), start_date=date(2025, 1, 1), end_date=date(2025, 1, 31),
-            )
+            GoldCampaignSummary.model_validate(payload)
 
     def test_start_date_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "keyword": "test",
+            "end_date": date(2025, 1, 31),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignSummary(
-                search_request_id=uuid4(), keyword="test", end_date=date(2025, 1, 31),
-            )
+            GoldCampaignSummary.model_validate(payload)
 
     def test_end_date_is_required(self) -> None:
+        payload: dict[str, object] = {
+            "search_request_id": uuid4(),
+            "keyword": "test",
+            "start_date": date(2025, 1, 1),
+        }
         with pytest.raises(PydanticValidationError):
-            GoldCampaignSummary(
-                search_request_id=uuid4(), keyword="test", start_date=date(2025, 1, 1),
-            )
+            GoldCampaignSummary.model_validate(payload)
 
 
 @pytest.mark.unit
