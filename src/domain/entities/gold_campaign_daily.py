@@ -11,7 +11,7 @@ from src.domain.value_objects.platform import Platform  # noqa: TC001
 class GoldCampaignDaily(BaseModel):
     """Maps to gold.gold_campaign_daily — daily aggregation per campaign."""
 
-    model_config = ConfigDict(strict=True, frozen=True)
+    model_config = ConfigDict(strict=True, frozen=True, extra="forbid")
 
     id: UUID = Field(default_factory=uuid4)
     search_request_id: UUID
