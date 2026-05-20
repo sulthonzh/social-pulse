@@ -20,7 +20,7 @@ CMD ["pytest", "--tb=short", "-v"]
 
 FROM base AS lint
 
-CMD ["ruff", "check", "src/", "&&", "mypy", "src/"]
+CMD ["sh", "-c", "ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/"]
 
 FROM base AS runtime
 
