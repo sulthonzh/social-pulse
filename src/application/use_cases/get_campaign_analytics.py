@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
-
-import duckdb
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    pass
+    import duckdb
+
+
+def _empty_rows() -> list[dict[str, object]]:
+    return []
 
 
 @dataclass(frozen=True)
@@ -23,10 +26,10 @@ class CampaignAnalytics:
     total_shares: int = 0
     total_replies: int = 0
     total_views: int = 0
-    sentiment_distribution: list[dict[str, Any]] = field(default_factory=list)
-    daily_volume: list[dict[str, Any]] = field(default_factory=list)
-    top_hashtags: list[dict[str, Any]] = field(default_factory=list)
-    top_topics: list[dict[str, Any]] = field(default_factory=list)
+    sentiment_distribution: list[dict[str, object]] = field(default_factory=_empty_rows)
+    daily_volume: list[dict[str, object]] = field(default_factory=_empty_rows)
+    top_hashtags: list[dict[str, object]] = field(default_factory=_empty_rows)
+    top_topics: list[dict[str, object]] = field(default_factory=_empty_rows)
 
 
 class GetCampaignAnalytics:
@@ -38,7 +41,7 @@ class GetCampaignAnalytics:
     def execute(self, search_request_id: str) -> CampaignAnalytics | None:
         row = self._conn.execute(
             """
-            SELECT search_request_id, keyword, platform,
+            SELECT search_request_id, keyword, platforms,
                    total_posts, positive_pct, negative_pct, neutral_pct,
                    avg_confidence, total_likes, total_shares,
                    total_replies, total_views, top_hashtags, top_topics
@@ -51,10 +54,13 @@ class GetCampaignAnalytics:
         if row is None:
             return self._build_from_post_search(search_request_id)
 
+        platforms_raw = row[2]
+        platform_str = ", ".join(str(p) for p in platforms_raw) if platforms_raw else "unknown"
+
         return CampaignAnalytics(
             search_request_id=str(row[0]),
             keyword=str(row[1]),
-            platform=str(row[2]),
+            platform=platform_str,
             total_posts=int(row[3]),
             positive_pct=float(row[4] or 0),
             negative_pct=float(row[5] or 0),
@@ -126,7 +132,7 @@ class GetCampaignAnalytics:
             daily_volume=self._get_daily_volume(search_request_id),
         )
 
-    def _get_sentiment_distribution(self, search_request_id: str) -> list[dict[str, Any]]:
+    def _get_sentiment_distribution(self, search_request_id: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             """
             SELECT sentiment, COUNT(*) as cnt
@@ -139,7 +145,7 @@ class GetCampaignAnalytics:
         ).fetchall()
         return [{"sentiment": str(r[0]), "count": int(r[1])} for r in rows]
 
-    def _get_daily_volume(self, search_request_id: str) -> list[dict[str, Any]]:
+    def _get_daily_volume(self, search_request_id: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             """
             SELECT CAST(posted_at AS DATE) as day, COUNT(*) as cnt
@@ -152,13 +158,13 @@ class GetCampaignAnalytics:
         ).fetchall()
         return [{"date": str(r[0]), "count": int(r[1])} for r in rows]
 
-    def _get_top_hashtags_from_posts(self, search_request_id: str) -> list[dict[str, Any]]:
+    def _get_top_hashtags_from_posts(self, search_request_id: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             """
-            SELECT UNNEST(hashtags) as tag, COUNT(*) as cnt
-            FROM gold.gold_post_search
+            SELECT tags.tag, COUNT(*) as cnt
+            FROM gold.gold_post_search, UNNEST(hashtags) AS tags(tag)
             WHERE search_request_id = ? AND hashtags IS NOT NULL
-            GROUP BY tag
+            GROUP BY tags.tag
             ORDER BY cnt DESC
             LIMIT 10
             """,
@@ -166,7 +172,7 @@ class GetCampaignAnalytics:
         ).fetchall()
         return [{"hashtag": str(r[0]), "count": int(r[1])} for r in rows]
 
-    def _get_top_topics_from_posts(self, search_request_id: str) -> list[dict[str, Any]]:
+    def _get_top_topics_from_posts(self, search_request_id: str) -> list[dict[str, object]]:
         rows = self._conn.execute(
             """
             SELECT topic_label, COUNT(*) as cnt
@@ -181,7 +187,10 @@ class GetCampaignAnalytics:
         return [{"topic": str(r[0]), "count": int(r[1])} for r in rows]
 
     @staticmethod
-    def _unnest_top(arr: Any) -> list[dict[str, Any]]:
+    def _unnest_top(arr: object) -> list[dict[str, object]]:
         if arr is None:
             return []
-        return [{"value": str(v), "count": 0} for v in arr]
+        if not isinstance(arr, Sequence) or isinstance(arr, str):
+            return []
+        items = cast("Sequence[object]", arr)
+        return [{"value": str(v), "count": 0} for v in items]

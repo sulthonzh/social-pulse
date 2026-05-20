@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import structlog
@@ -46,8 +47,9 @@ def _resolve_datetime(raw: object) -> datetime | None:
 def _resolve_str_list(raw: object) -> list[str]:
     if raw is None:
         return []
-    if isinstance(raw, list):
-        return [str(item) for item in raw]
+    if isinstance(raw, Sequence) and not isinstance(raw, str):
+        items = cast("Sequence[object]", raw)
+        return [str(item) for item in items]
     return []
 
 
@@ -95,7 +97,7 @@ def _row_to_gold_campaign_summary(row: tuple[object, ...]) -> GoldCampaignSummar
         top_topics=_resolve_str_list(raw_top_topics),
         platforms=_resolve_str_list(raw_platforms),
         ai_version=int(str(raw_ai_version)),
-        created_at=_resolve_datetime(raw_created_at) if raw_created_at is not None else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
 
