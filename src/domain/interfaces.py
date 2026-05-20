@@ -1,13 +1,20 @@
 from __future__ import annotations
 
-from typing import Protocol
-from datetime import date
+from typing import TYPE_CHECKING, Protocol
 
-# Import domain types (these will exist when domain layer is complete)
-from src.domain.entities.search_request import SearchRequest
-from src.domain.entities.crawl_run import CrawlRun
-from src.domain.entities.raw_post import RawPost
-from src.domain.value_objects.platform import Platform
+if TYPE_CHECKING:
+    from datetime import date
+
+    from src.domain.entities.ai_enrichment import AIEnrichment
+    from src.domain.entities.ai_job import AIJob
+    from src.domain.entities.crawl_run import CrawlRun
+    from src.domain.entities.enriched_post import EnrichedPost
+    from src.domain.entities.language_result import LanguageResult
+    from src.domain.entities.raw_post import RawPost
+    from src.domain.entities.search_request import SearchRequest
+    from src.domain.entities.sentiment_result import SentimentResult
+    from src.domain.entities.topic_result import TopicResult
+    from src.domain.value_objects.platform import Platform
 
 
 class PostRepository(Protocol):
@@ -107,3 +114,47 @@ class Crawler(Protocol):
     async def health_check(self) -> bool:
         """Check if the crawler's API is reachable."""
         ...
+
+
+class EnrichedPostRepository(Protocol):
+    """Repository for Silver layer enriched post persistence."""
+
+    def save(self, post: EnrichedPost) -> EnrichedPost: ...
+    def save_batch(self, posts: list[EnrichedPost]) -> int: ...
+    def get_by_bronze_post_id(self, bronze_post_id: str) -> EnrichedPost | None: ...
+    def get_by_search(self, search_request_id: str) -> list[EnrichedPost]: ...
+    def count_by_search(self, search_request_id: str) -> int: ...
+
+
+class AIEnrichmentRepository(Protocol):
+    """Repository for AI enrichment results."""
+
+    def save(self, enrichment: AIEnrichment) -> AIEnrichment: ...
+    def get_by_post(self, silver_post_id: str, ai_version: int = 1) -> AIEnrichment | None: ...
+    def get_by_search(self, search_request_id: str, ai_version: int = 1) -> list[AIEnrichment]: ...
+
+
+class AIJobRepository(Protocol):
+    """Repository for AI processing job queue."""
+
+    def save(self, job: AIJob) -> AIJob: ...
+    def get_pending_jobs(self, job_type: str | None = None, limit: int = 100) -> list[AIJob]: ...
+    def update_status(self, job_id: str, status: str, error_message: str | None = None) -> None: ...
+
+
+class SentimentAnalyzer(Protocol):
+    """Async interface for sentiment analysis."""
+
+    async def analyze(self, text: str) -> SentimentResult: ...
+
+
+class TopicExtractor(Protocol):
+    """Async interface for topic extraction."""
+
+    async def extract(self, text: str) -> TopicResult: ...
+
+
+class LanguageDetector(Protocol):
+    """Async interface for language detection."""
+
+    async def detect(self, text: str) -> LanguageResult: ...
