@@ -22,7 +22,7 @@ class _AsyncOpenAIClient(Protocol):
     ) -> Any: ...
 
 
-class ZAIClient:
+class OpenAIClient:
     def __init__(
         self,
         api_key: str,
@@ -64,7 +64,7 @@ class ZAIClient:
         )
         content = response.choices[0].message.content
         logger.debug(
-            "zai_chat_json",
+            "openai_chat_json",
             model=self._model,
             prompt_len=len(user_prompt),
             response_len=len(content) if content else 0,
