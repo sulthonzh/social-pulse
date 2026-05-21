@@ -5,7 +5,7 @@
 #   docker compose up -d app              # Start app
 #   docker compose run --rm test           # Run tests
 #   docker compose run --rm lint           # Run linting
-#   docker compose --profile pipeline up -d  # Start with worker + gold-builder
+#   docker compose --profile pipeline up -d  # Start with workers + gold-builder
 # ============================================================
 
 name: socialpulse
@@ -27,7 +27,7 @@ services:
       - ../src:/app/src
       - ../scripts:/app/scripts
       - ../.streamlit:/app/.streamlit
-      - app-data:/app/data
+      - ../data:/app/data
       - model-cache:/app/models
     environment:
       - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
@@ -53,7 +53,7 @@ services:
     container_name: socialpulse-worker
     volumes:
       - ../src:/app/src
-      - app-data:/app/data
+      - ../data:/app/data
       - model-cache:/app/models
     environment:
       - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
@@ -69,6 +69,29 @@ services:
     networks:
       - socialpulse
 
+  crawl-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: crawl-worker
+    container_name: socialpulse-crawl-worker
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_TWITTER_BEARER_TOKEN=${SOCIALPULSE_TWITTER_BEARER_TOKEN:-}
+    restart: unless-stopped
+    profiles:
+      - pipeline
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - socialpulse
+
   gold-builder:
     build:
       context: ..
@@ -77,7 +100,7 @@ services:
     container_name: socialpulse-gold-builder
     volumes:
       - ../src:/app/src
-      - app-data:/app/data
+      - ../data:/app/data
     environment:
       - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
       - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
@@ -129,8 +152,6 @@ services:
 # ============================================================
 
 volumes:
-  app-data:
-    driver: local
   model-cache:
     driver: local
 
