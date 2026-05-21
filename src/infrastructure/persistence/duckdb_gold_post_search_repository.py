@@ -20,7 +20,7 @@ _TABLE = "gold.gold_post_search"
 _INSERT_COLUMNS = (
     "id, search_request_id, keyword, platform, "
     "author_handle, author_name, post_text, posted_at, post_url, "
-    "sentiment, sentiment_confidence, topic_label, language, "
+    "sentiment, sentiment_confidence, topic_label, topic_confidence, language, "
     "hashtags, mentions, "
     "like_count, share_count, reply_count, view_count, "
     "ai_version, created_at"
@@ -66,6 +66,7 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         raw_sentiment,
         raw_sentiment_confidence,
         raw_topic_label,
+        raw_topic_confidence,
         raw_language,
         raw_hashtags,
         raw_mentions,
@@ -92,6 +93,9 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         if raw_sentiment_confidence is not None
         else None,
         topic_label=_resolve_str(raw_topic_label),
+        topic_confidence=float(str(raw_topic_confidence))
+        if raw_topic_confidence is not None
+        else None,
         language=_resolve_str(raw_language),
         hashtags=_resolve_str_list(raw_hashtags),
         mentions=_resolve_str_list(raw_mentions),
@@ -118,6 +122,7 @@ def _post_to_params(post: GoldPostSearch) -> tuple[object, ...]:
         post.sentiment,
         post.sentiment_confidence,
         post.topic_label,
+        post.topic_confidence,
         post.language,
         post.hashtags,
         post.mentions,
@@ -152,7 +157,7 @@ class DuckDBGoldPostSearchRepository:
             f"""
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
-            VALUES ({",".join(["?"] * 21)})
+            VALUES ({",".join(["?"] * 22)})
             """,
             params,
         )

@@ -48,6 +48,7 @@ def _make_ai_enrichment(silver_post_id, **overrides) -> AIEnrichment:
         "mentions": ["@user1", "@user2"],
         "language": "en",
         "topic_label": "technology",
+        "topic_confidence": 0.85,
         "reach_estimate": 1000,
         "sentiment": SentimentLabel.POSITIVE,
         "sentiment_confidence": 0.95,
@@ -135,6 +136,7 @@ class TestDuckDBAIEnrichmentRepository:
             mentions=["@alice", "@bob"],
             language="en",
             topic_label="machine_learning",
+            topic_confidence=0.78,
             reach_estimate=5000,
             sentiment=SentimentLabel.NEGATIVE,
             sentiment_confidence=0.87,
@@ -155,6 +157,7 @@ class TestDuckDBAIEnrichmentRepository:
         assert found.mentions == enrichment.mentions
         assert found.language == enrichment.language
         assert found.topic_label == enrichment.topic_label
+        assert found.topic_confidence == pytest.approx(enrichment.topic_confidence)
         assert found.reach_estimate == enrichment.reach_estimate
         assert found.sentiment == enrichment.sentiment
         assert found.sentiment_confidence == pytest.approx(enrichment.sentiment_confidence)
@@ -175,3 +178,16 @@ class TestDuckDBAIEnrichmentRepository:
         results_v2 = repo.get_by_search(str(sr_id), ai_version=2)
         assert len(results_v1) == 1
         assert len(results_v2) == 1
+
+    def test_get_max_version_returns_zero_for_new_post(self, db_with_schema):
+        repo = DuckDBAIEnrichmentRepository(db_with_schema)
+        assert repo.get_max_version(str(uuid4())) == 0
+
+    def test_get_max_version_returns_max_version(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIEnrichmentRepository(db_with_schema)
+        repo.save(_make_ai_enrichment(post.id, ai_version=1))
+        repo.save(_make_ai_enrichment(post.id, ai_version=3))
+        repo.save(_make_ai_enrichment(post.id, ai_version=2))
+
+        assert repo.get_max_version(str(post.id)) == 3

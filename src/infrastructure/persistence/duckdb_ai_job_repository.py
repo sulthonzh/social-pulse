@@ -175,3 +175,9 @@ class DuckDBAIJobRepository:
             job_id=job_id,
             status=status,
         )
+
+    def update_attempts(self, job_id: str, attempts: int) -> None:
+        self._conn.execute(
+            f"UPDATE {_TABLE} SET attempts = ? WHERE id = ?",
+            [attempts, job_id],
+        )

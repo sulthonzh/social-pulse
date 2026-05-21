@@ -43,6 +43,7 @@ def _make_ai_enrichment(post_id: UUID, **overrides: object) -> AIEnrichment:
         "mentions": ["@friend"],
         "language": "en",
         "topic_label": "technology",
+        "topic_confidence": 0.85,
         "sentiment": SentimentLabel.POSITIVE,
         "sentiment_confidence": 0.95,
     }
@@ -52,7 +53,7 @@ def _make_ai_enrichment(post_id: UUID, **overrides: object) -> AIEnrichment:
 
 def _build_use_case():
     enriched_post_repo = MagicMock(spec=["get_by_search"])
-    ai_enrichment_repo = MagicMock(spec=["get_by_post"])
+    ai_enrichment_repo = MagicMock(spec=["get_by_posts"])
     gold_post_search_repo = MagicMock(spec=["save_batch"])
     use_case = BuildPostSearch(
         enriched_post_repo=enriched_post_repo,
@@ -70,14 +71,14 @@ class TestBuildPostSearch:
         post = _make_enriched_post(search_request_id=search_request_id)
         enrichment = _make_ai_enrichment(post.id)
         enriched_repo.get_by_search.return_value = [post]
-        ai_repo.get_by_post.return_value = enrichment
+        ai_repo.get_by_posts.return_value = {str(post.id): enrichment}
         gold_repo.save_batch.return_value = 1
 
         result = await use_case.execute(str(search_request_id), keyword="python")
 
         assert result == 1
         enriched_repo.get_by_search.assert_called_once_with(str(search_request_id))
-        ai_repo.get_by_post.assert_called_once_with(str(post.id))
+        ai_repo.get_by_posts.assert_called_once_with([str(post.id)])
         saved_posts: list[GoldPostSearch] = gold_repo.save_batch.call_args[0][0]
         assert len(saved_posts) == 1
         saved = saved_posts[0]
@@ -94,7 +95,7 @@ class TestBuildPostSearch:
         search_request_id = uuid4()
         post = _make_enriched_post(search_request_id=search_request_id)
         enriched_repo.get_by_search.return_value = [post]
-        ai_repo.get_by_post.return_value = None
+        ai_repo.get_by_posts.return_value = {}
         gold_repo.save_batch.return_value = 1
 
         result = await use_case.execute(str(search_request_id), keyword="python")
@@ -114,5 +115,5 @@ class TestBuildPostSearch:
         result = await use_case.execute(str(uuid4()), keyword="python")
 
         assert result == 0
-        ai_repo.get_by_post.assert_not_called()
+        ai_repo.get_by_posts.assert_not_called()
         gold_repo.save_batch.assert_not_called()

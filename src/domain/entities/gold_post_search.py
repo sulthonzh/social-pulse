@@ -25,6 +25,7 @@ class GoldPostSearch(BaseModel):
     sentiment: str | None = None
     sentiment_confidence: float | None = None
     topic_label: str | None = None
+    topic_confidence: float | None = None
     language: str | None = None
     hashtags: list[str] = Field(default_factory=list)
     mentions: list[str] = Field(default_factory=list)

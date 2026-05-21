@@ -45,6 +45,10 @@ class TestAIEnrichmentDefaults:
         enrichment = self._make_enrichment()
         assert enrichment.topic_label is None
 
+    def test_topic_confidence_defaults_to_none(self) -> None:
+        enrichment = self._make_enrichment()
+        assert enrichment.topic_confidence is None
+
     def test_reach_estimate_defaults_to_none(self) -> None:
         enrichment = self._make_enrichment()
         assert enrichment.reach_estimate is None
@@ -115,6 +119,10 @@ class TestAIEnrichmentExplicitValues:
     def test_explicit_topic_label(self) -> None:
         enrichment = self._make_enrichment(topic_label="technology")
         assert enrichment.topic_label == "technology"
+
+    def test_explicit_topic_confidence(self) -> None:
+        enrichment = self._make_enrichment(topic_confidence=0.85)
+        assert enrichment.topic_confidence == 0.85
 
     def test_explicit_reach_estimate(self) -> None:
         enrichment = self._make_enrichment(reach_estimate=50000)

@@ -20,6 +20,7 @@ class AIEnrichment(BaseModel):
     mentions: list[str] = Field(default_factory=list)
     language: str | None = None
     topic_label: str | None = None
+    topic_confidence: float | None = None
     reach_estimate: int | None = None
     sentiment: SentimentLabel | None = None
     sentiment_confidence: float | None = None
