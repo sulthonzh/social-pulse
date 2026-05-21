@@ -14,7 +14,7 @@ logger = structlog.get_logger()
 
 
 class _DetectorProtocol(Protocol):
-    def detect_language(self, text: str) -> Language | None: ...
+    def detect_language_of(self, text: str) -> Language | None: ...
 
 
 class LinguaLanguageDetector:
@@ -39,7 +39,7 @@ class LinguaLanguageDetector:
             return LanguageResult(language_code="unknown", confidence=0.0)
 
         detector = self._ensure_detector()
-        result = await asyncio.to_thread(detector.detect_language, text)
+        result = await asyncio.to_thread(detector.detect_language_of, text)
 
         if result is None:
             logger.debug("language_not_detected")

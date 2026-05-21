@@ -49,8 +49,32 @@ class EnrichPostUseCase:
         text = self._extract_text(raw_post)
         now = datetime.now(UTC)
 
+        # Create and persist the EnrichedPost FIRST so the FK for ai_jobs resolves.
+        enriched_post = EnrichedPost(
+            bronze_post_id=raw_post.id,
+            search_request_id=raw_post.search_request_id,
+            platform=raw_post.platform,
+            platform_id=raw_post.platform_id,
+            author_handle=raw_post.author_handle,
+            author_name=raw_post.raw_payload.get("author_name") if raw_post.raw_payload else None,
+            post_text=text,
+            posted_at=self._parse_datetime(raw_post.raw_payload.get("posted_at"))
+            if raw_post.raw_payload
+            else None,
+            post_url=raw_post.raw_payload.get("post_url") if raw_post.raw_payload else None,
+            like_count=raw_post.raw_payload.get("like_count", 0) if raw_post.raw_payload else 0,
+            share_count=raw_post.raw_payload.get("share_count", 0) if raw_post.raw_payload else 0,
+            reply_count=raw_post.raw_payload.get("reply_count", 0) if raw_post.raw_payload else 0,
+            view_count=raw_post.raw_payload.get("view_count", 0) if raw_post.raw_payload else 0,
+            is_retweet=raw_post.raw_payload.get("is_retweet", False)
+            if raw_post.raw_payload
+            else False,
+        )
+
+        saved_post = self._enriched_post_repo.save(enriched_post)
+
         ai_job = AIJob(
-            silver_post_id=raw_post.id,
+            silver_post_id=saved_post.id,
             job_type=AIJobType.FULL_ENRICHMENT,
             status=AIJobStatus.RUNNING,
             attempts=1,
@@ -82,29 +106,6 @@ class EnrichPostUseCase:
                 f"AI enrichment failed for post {raw_post.id}: {exc}",
             ) from exc
 
-        enriched_post = EnrichedPost(
-            bronze_post_id=raw_post.id,
-            search_request_id=raw_post.search_request_id,
-            platform=raw_post.platform,
-            platform_id=raw_post.platform_id,
-            author_handle=raw_post.author_handle,
-            author_name=raw_post.raw_payload.get("author_name") if raw_post.raw_payload else None,
-            post_text=text,
-            posted_at=self._parse_datetime(raw_post.raw_payload.get("posted_at"))
-            if raw_post.raw_payload
-            else None,
-            post_url=raw_post.raw_payload.get("post_url") if raw_post.raw_payload else None,
-            like_count=raw_post.raw_payload.get("like_count", 0) if raw_post.raw_payload else 0,
-            share_count=raw_post.raw_payload.get("share_count", 0) if raw_post.raw_payload else 0,
-            reply_count=raw_post.raw_payload.get("reply_count", 0) if raw_post.raw_payload else 0,
-            view_count=raw_post.raw_payload.get("view_count", 0) if raw_post.raw_payload else 0,
-            is_retweet=raw_post.raw_payload.get("is_retweet", False)
-            if raw_post.raw_payload
-            else False,
-        )
-
-        saved_post = self._enriched_post_repo.save(enriched_post)
-
         ai_enrichment = AIEnrichment(
             silver_post_id=saved_post.id,
             language=language_result.language_code,
@@ -122,7 +123,6 @@ class EnrichPostUseCase:
 
         completed_job = ai_job.model_copy(
             update={
-                "silver_post_id": saved_post.id,
                 "status": AIJobStatus.COMPLETED,
                 "completed_at": datetime.now(UTC),
             }
