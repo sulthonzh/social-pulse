@@ -4,8 +4,8 @@ import asyncio
 from typing import Any
 
 import pytest
-from src.infrastructure.ai.zai_topic_extractor import (
-    ZAITopicExtractor,
+from src.infrastructure.ai.openai_topic_extractor import (
+    OpenAITopicExtractor,
     _parse_response,
 )
 
@@ -42,17 +42,17 @@ class TestParseResponse:
         result = _parse_response({"topic_label": "ai", "confidence": 2.0}, "glm-4.5-flash")
         assert result.confidence == 1.0
 
-    def test_model_name_includes_zai_prefix(self):
+    def test_model_name_includes_openai_prefix(self):
         result = _parse_response({"topic_label": "python", "confidence": 0.9}, "glm-4.5-flash")
-        assert result.model_name == "zai/glm-4.5-flash"
+        assert result.model_name == "openai/glm-4.5-flash"
         assert result.model_version == "glm-4.5-flash"
 
 
 @pytest.mark.unit
-class TestZAITopicExtractor:
-    def _make_extractor(self, return_value: dict[str, Any] | None) -> ZAITopicExtractor:
+class TestOpenAITopicExtractor:
+    def _make_extractor(self, return_value: dict[str, Any] | None) -> OpenAITopicExtractor:
         client = _MockClient(return_value)
-        return ZAITopicExtractor(client=client)
+        return OpenAITopicExtractor(client=client)
 
     def test_empty_string_returns_unknown(self):
         extractor = self._make_extractor({"topic_label": "python", "confidence": 0.9})
@@ -78,5 +78,5 @@ class TestZAITopicExtractor:
     def test_result_contains_model_info(self):
         extractor = self._make_extractor({"topic_label": "data science", "confidence": 0.88})
         result = _run(extractor.extract("data science rocks"))
-        assert "zai/" in result.model_name
+        assert "openai/" in result.model_name
         assert result.model_version == "glm-4.5-flash"

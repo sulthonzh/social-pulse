@@ -7,7 +7,7 @@ import structlog
 from src.domain.entities.topic_result import TopicResult
 
 if TYPE_CHECKING:
-    from src.infrastructure.ai.zai_client import ZAIClient
+    from src.infrastructure.ai.openai_client import OpenAIClient
 
 logger = structlog.get_logger()
 
@@ -21,7 +21,7 @@ _SYSTEM_PROMPT = (
 
 _UNKNOWN_RESULT = TopicResult(
     topic_label="unknown",
-    model_name="zai",
+    model_name="openai",
     model_version="unknown",
     confidence=0.0,
 )
@@ -35,14 +35,14 @@ def _parse_response(data: dict[str, object], model: str) -> TopicResult:
     version = model.rsplit("/", maxsplit=1)[-1] if "/" in model else model
     return TopicResult(
         topic_label=topic_label,
-        model_name=f"zai/{model}",
+        model_name=f"openai/{model}",
         model_version=version,
         confidence=confidence,
     )
 
 
-class ZAITopicExtractor:
-    def __init__(self, client: ZAIClient) -> None:
+class OpenAITopicExtractor:
+    def __init__(self, client: OpenAIClient) -> None:
         self._client = client
 
     async def extract(self, text: str) -> TopicResult:
@@ -56,7 +56,7 @@ class ZAITopicExtractor:
         )
 
         if not data:
-            logger.warning("zai_topic_empty_response")
+            logger.warning("openai_topic_empty_response")
             return _UNKNOWN_RESULT
 
         result = _parse_response(data, self._client._model)
