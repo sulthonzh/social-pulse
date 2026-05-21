@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import date
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-from unittest.mock import AsyncMock
-
 from src.application.use_cases.ingest_crawl import IngestCrawlRun
 from src.domain.entities.raw_post import RawPost
 from src.domain.entities.search_request import SearchRequest
@@ -126,8 +125,7 @@ async def test_pipeline_with_crawler_failure(db_with_schema):
         await use_case.execute(request, crawler)
 
     sr_row = db_with_schema.execute(
-        "SELECT status, posts_found FROM bronze.search_requests "
-        "ORDER BY created_at DESC LIMIT 1",
+        "SELECT status, posts_found FROM bronze.search_requests ORDER BY created_at DESC LIMIT 1",
     ).fetchone()
     assert sr_row is not None
     assert sr_row[0] == "failed"
@@ -160,8 +158,7 @@ async def test_pipeline_with_empty_crawl_results(db_with_schema):
     assert result.posts_fetched == 0
 
     sr_row = db_with_schema.execute(
-        "SELECT status, posts_found FROM bronze.search_requests "
-        "ORDER BY created_at DESC LIMIT 1",
+        "SELECT status, posts_found FROM bronze.search_requests ORDER BY created_at DESC LIMIT 1",
     ).fetchone()
     assert sr_row is not None
     assert sr_row[0] == "completed"
@@ -194,8 +191,7 @@ async def test_pipeline_with_duplicate_posts_idempotency(db_with_schema):
     assert result.posts_fetched == 2
 
     post_rows = db_with_schema.execute(
-        "SELECT platform_id FROM bronze.bronze_posts "
-        "WHERE search_request_id = ?",
+        "SELECT platform_id FROM bronze.bronze_posts WHERE search_request_id = ?",
         [str(result.search_request_id)],
     ).fetchall()
     assert len(post_rows) == 2

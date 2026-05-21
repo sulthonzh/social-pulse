@@ -77,7 +77,7 @@ def _seed_bronze_row(db_with_schema, table: str, row: dict) -> None:
     cols = ", ".join(row.keys())
     placeholders = ", ".join(["?"] * len(row))
     db_with_schema.execute(
-        f"INSERT INTO {table} ({cols}) VALUES ({placeholders})",  # noqa: S608
+        f"INSERT INTO {table} ({cols}) VALUES ({placeholders})",
         list(row.values()),
     )
 
@@ -160,7 +160,6 @@ def _seed_silver_post(
 
 @pytest.mark.integration
 class TestEnrichmentPipeline:
-
     def test_enriched_post_lifecycle(self, db_with_schema):
         bronze_post_id = _seed_bronze_post(db_with_schema)
         search_request_id = str(uuid4())
@@ -354,8 +353,7 @@ class TestEnrichmentPipeline:
         assert retrieved_v2.topic_label == "v2-topic"
 
         row = db_with_schema.execute(
-            "SELECT count(*) FROM silver.silver_ai_enrichment"
-            " WHERE silver_post_id = ?",
+            "SELECT count(*) FROM silver.silver_ai_enrichment WHERE silver_post_id = ?",
             [str(silver_post.id)],
         ).fetchone()
         assert row is not None
@@ -415,7 +413,8 @@ class TestEnrichmentPipeline:
         assert retrieved_post.like_count == 100
 
         retrieved_enrichment = enrichment_repo.get_by_post(
-            str(silver_post.id), ai_version=1,
+            str(silver_post.id),
+            ai_version=1,
         )
         assert retrieved_enrichment is not None
         assert retrieved_enrichment.silver_post_id == silver_post.id
