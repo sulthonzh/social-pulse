@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import duckdb
 import streamlit as st
 
+from src.domain.exceptions import SocialPulseError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
@@ -61,38 +62,43 @@ def render() -> None:
         if submitted:
             if not keyword.strip():
                 st.error("Keyword is required.")
+            elif len(keyword.strip()) > 200:
+                st.error("Keyword must be 200 characters or less.")
             else:
                 try:
                     platform = Platform(platform_choice)
                     
-                    # Handle date input return type - Streamlit date input always returns a tuple
-                    # even if only one date is selected, so we handle it directly with safety checks
                     if len(start_date_input) == 0:
-                        start_date = date(2025, 1, 1)  # Default start date
-                        end_date = date.today()  # Default end date
+                        start_date = date(2025, 1, 1)
+                        end_date = date.today()
                     else:
                         start_date = start_date_input[0]
                         end_date = start_date_input[1] if len(start_date_input) > 1 else date.today()
 
-                    from src.application.use_cases.search_posts import SearchPosts  # noqa: PLC0415
+                    if start_date > end_date:
+                        st.error("Start date must be before end date.")
+                    elif (end_date - start_date).days > 365:
+                        st.error("Date range must be 365 days or less.")
+                    else:
+                        from src.application.use_cases.search_posts import SearchPosts  # noqa: PLC0415
 
-                    conn = _get_conn()
-                    repo = DuckDBSearchRequestRepository(conn)
-                    use_case = SearchPosts(repo)
-                    result = asyncio.run(
-                        use_case.execute(
-                            keyword=keyword.strip(),
-                            platform=platform,
-                            start_date=start_date,
-                            end_date=end_date,
+                        conn = _get_conn()
+                        repo = DuckDBSearchRequestRepository(conn)
+                        use_case = SearchPosts(repo)
+                        result = asyncio.run(
+                            use_case.execute(
+                                keyword=keyword.strip(),
+                                platform=platform,
+                                start_date=start_date,
+                                end_date=end_date,
+                            )
                         )
-                    )
-                    conn.close()
-                    st.success(
-                        f"Search request created: **{result.keyword}** "
-                        f"on {result.platform.value} ({result.id})"
-                    )
-                except Exception as exc:
+                        conn.close()
+                        st.success(
+                            f"Search request created: **{result.keyword}** "
+                            f"on {result.platform.value} ({result.id})"
+                        )
+                except SocialPulseError as exc:
                     st.error(f"Failed to create request: {exc}")
 
     st.divider()

@@ -4,6 +4,7 @@ from typing import Any
 
 import streamlit as st
 
+from src.domain.exceptions import SocialPulseError
 from src.presentation.components.charts import (
     render_hashtag_chart,
     render_sentiment_chart,
@@ -48,7 +49,7 @@ def render() -> None:
     try:
         analytics_uc = GetCampaignAnalytics(conn)  # type: ignore[arg-type]
         result = analytics_uc.execute(selected_id)
-    except Exception as exc:
+    except SocialPulseError as exc:
         st.error(f"Failed to load analytics: {exc}")
         return
     finally:
