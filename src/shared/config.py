@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     sentiment_model: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"
     topic_model: str = "all-MiniLM-L6-v2"
 
+    ai_provider: str = "local"  # "local" or "zai"
+    zai_api_key: str = ""
+    zai_base_url: str = "https://api.z.ai/api/coding/paas/v4"
+    zai_model: str = "glm-4.7"
+
     max_crawl_results: int = 1000
     crawl_timeout_seconds: int = 30
     ai_max_retries: int = 3
