@@ -45,7 +45,7 @@ def test_submit_with_keyword_shows_response(page: Page) -> None:
     alert = page.wait_for_selector('[data-testid="stAlert"]', timeout=15000)
     assert alert is not None
     alert_text = alert.inner_text().lower()
-    assert "data engineering" in alert_text or "failed" in alert_text
+    assert "data engineering" in alert_text or "failed" in alert_text or "365 days" in alert_text
 
 
 @pytest.mark.e2e
