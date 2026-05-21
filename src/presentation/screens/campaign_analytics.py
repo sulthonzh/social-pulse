@@ -11,11 +11,11 @@ from src.presentation.components.charts import (
     render_volume_trend,
 )
 from src.presentation.components.filters import render_campaign_selector
-from src.shared.config import settings
+from src.shared.config import get_db_connection
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(settings.db_path))
+    return get_db_connection()
 
 
 def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:

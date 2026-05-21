@@ -12,13 +12,13 @@ from src.presentation.components.charts import (
     render_volume_comparison_chart,
 )
 from src.presentation.components.filters import render_multi_campaign_selector
-from src.shared.config import settings
+from src.shared.config import get_db_connection
 
 _MIN_CAMPAIGNS_FOR_COMPARISON = 2
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(settings.db_path))
+    return get_db_connection()
 
 
 def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:

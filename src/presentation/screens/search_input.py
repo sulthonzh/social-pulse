@@ -10,11 +10,11 @@ from src.domain.value_objects.platform import Platform
 from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
 )
-from src.shared.config import settings
+from src.shared.config import get_db_connection
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(settings.db_path))
+    return get_db_connection()
 
 
 def _get_recent_requests(conn: duckdb.DuckDBPyConnection) -> list[dict]:
