@@ -60,9 +60,9 @@ def render_campaign_selector(
     if not campaigns:
         st.sidebar.info("No campaigns available.")
         return None
-    options = {f"{c['keyword']} ({c['platform']})": c["id"] for c in campaigns}
+    options: dict[str, str] = {f"{c['keyword']} ({c['platform']})": str(c["id"]) for c in campaigns}
     label = st.sidebar.selectbox("Campaign", list(options.keys()), key=key)
-    return options[label]
+    return options.get(label)
 
 
 def render_multi_campaign_selector(
@@ -72,6 +72,6 @@ def render_multi_campaign_selector(
     if not campaigns:
         st.sidebar.info("No campaigns available.")
         return []
-    options = {f"{c['keyword']} ({c['platform']})": c["id"] for c in campaigns}
+    options: dict[str, str] = {f"{c['keyword']} ({c['platform']})": str(c["id"]) for c in campaigns}
     labels = st.sidebar.multiselect("Campaigns to compare", list(options.keys()), key=key)
     return [options[label] for label in labels]

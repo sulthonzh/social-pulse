@@ -71,4 +71,5 @@ class OpenAIClient:
         )
         if not content:
             return {}
-        return json.loads(content)
+        result: dict[str, Any] = json.loads(content)
+        return result

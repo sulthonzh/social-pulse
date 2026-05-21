@@ -1,14 +1,18 @@
+# ruff: noqa: S311
 from __future__ import annotations
 
 import logging
 import random
 import re
 from datetime import UTC, date, datetime, timedelta
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from src.domain.entities.raw_post import RawPost
-from src.domain.value_objects.platform import Platform
 from src.infrastructure.crawling.base import BaseCrawler
+
+if TYPE_CHECKING:
+    from src.domain.value_objects.platform import Platform
 
 logger = logging.getLogger(__name__)
 
@@ -91,10 +95,7 @@ def _extract_hashtag(keyword: str) -> str:
 
 def _random_datetime(start: date, end: date) -> datetime:
     delta = (end - start).days
-    if delta <= 0:
-        offset_days = 0
-    else:
-        offset_days = random.randint(0, delta)
+    offset_days = 0 if delta <= 0 else random.randint(0, delta)
     base = datetime(start.year, start.month, start.day, tzinfo=UTC)
     return base + timedelta(days=offset_days, hours=random.randint(0, 23), minutes=random.randint(0, 59))
 

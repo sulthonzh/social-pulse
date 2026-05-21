@@ -357,7 +357,7 @@ class TestDuckDBGoldPostSearchRepository:
         ]
         repo.save_batch(posts)
 
-        results, total = repo.search_posts(
+        _, total = repo.search_posts(
             keyword=None, sentiment=None, platform=None,
             start_date=datetime(2025, 1, 1, 0, 0, 0),
             end_date=datetime(2025, 2, 28, 23, 59, 59),

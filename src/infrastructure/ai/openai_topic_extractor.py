@@ -29,7 +29,8 @@ _UNKNOWN_RESULT = TopicResult(
 
 def _parse_response(data: dict[str, object], model: str) -> TopicResult:
     topic_label = str(data.get("topic_label", "unknown")).strip() or "unknown"
-    confidence = float(data.get("confidence", 0.0))
+    raw_confidence = data.get("confidence", 0.0)
+    confidence = float(raw_confidence) if isinstance(raw_confidence, (int, float)) else 0.0
     confidence = max(0.0, min(1.0, confidence))
 
     version = model.rsplit("/", maxsplit=1)[-1] if "/" in model else model

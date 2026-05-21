@@ -65,9 +65,7 @@ def _row_to_ai_job(row: tuple[object, ...]) -> AIJob:
         error_message=_resolve_str(raw_error_message),
         started_at=_resolve_datetime(raw_started_at),
         completed_at=_resolve_datetime(raw_completed_at),
-        created_at=_resolve_datetime(raw_created_at)
-        if raw_created_at is not None
-        else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
 

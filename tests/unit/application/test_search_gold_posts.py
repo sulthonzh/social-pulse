@@ -48,7 +48,7 @@ def _build_use_case(posts=None, total=0):
 class TestSearchGoldPosts:
     def test_execute_returns_result_with_posts_and_total(self):
         posts = [_make_gold_post()]
-        use_case, repo = _build_use_case(posts=posts, total=1)
+        use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
             keyword=None, sentiment=None, platform=None,

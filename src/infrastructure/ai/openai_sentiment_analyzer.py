@@ -30,7 +30,8 @@ _UNKNOWN_RESULT = SentimentResult(
 
 def _parse_response(data: dict[str, object], model: str) -> SentimentResult:
     raw_label = str(data.get("label", "neutral")).lower().strip()
-    confidence = float(data.get("confidence", 0.0))
+    raw_confidence = data.get("confidence", 0.0)
+    confidence = float(raw_confidence) if isinstance(raw_confidence, (int, float)) else 0.0
     confidence = max(0.0, min(1.0, confidence))
 
     try:
