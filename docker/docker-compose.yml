@@ -26,6 +26,7 @@ services:
     volumes:
       - ../src:/app/src
       - ../scripts:/app/scripts
+      - ../.streamlit:/app/.streamlit
       - app-data:/app/data
       - model-cache:/app/models
     environment:
@@ -100,6 +101,7 @@ services:
     volumes:
       - ../tests:/app/tests
       - ../src:/app/src
+      - ../.streamlit:/app/.streamlit
     environment:
       - PYTHONPATH=/app
       - SOCIALPULSE_ENV=test
