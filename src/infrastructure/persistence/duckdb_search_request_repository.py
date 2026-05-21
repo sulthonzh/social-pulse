@@ -34,6 +34,10 @@ class DuckDBSearchRequestRepository:
                 (id, keyword, start_date, end_date, platform, status,
                  posts_found, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                status = excluded.status,
+                posts_found = excluded.posts_found,
+                updated_at = excluded.updated_at
             """,
             [
                 request.id,
