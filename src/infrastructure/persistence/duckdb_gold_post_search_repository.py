@@ -273,3 +273,64 @@ class DuckDBGoldPostSearchRepository:
             [search_request_id],
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
+
+    def get_campaigns(self) -> list[dict[str, str]]:
+        rows = self._conn.execute(
+            f"""
+            SELECT DISTINCT search_request_id, keyword, platform
+            FROM {_TABLE}
+            ORDER BY keyword
+            """
+        ).fetchall()
+        return [
+            {"id": str(row[0]), "keyword": str(row[1]), "platform": str(row[2])}
+            for row in rows
+        ]
+
+    def search_posts(
+        self,
+        keyword: str | None,
+        sentiment: str | None,
+        platform: str | None,
+        start_date: object | None,
+        end_date: object | None,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[GoldPostSearch], int]:
+        conditions: list[str] = []
+        params: list[object] = []
+
+        if keyword:
+            conditions.append("post_text ILIKE ?")
+            params.append(f"%{keyword}%")
+        if sentiment:
+            conditions.append("sentiment = ?")
+            params.append(sentiment)
+        if platform:
+            conditions.append("platform = ?")
+            params.append(platform)
+        if start_date and end_date:
+            conditions.append("posted_at BETWEEN ? AND ?")
+            params.extend([start_date, end_date])
+
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        count_row = self._conn.execute(
+            f"SELECT COUNT(*) FROM {_TABLE} {where}",
+            params,
+        ).fetchone()
+        total = int(count_row[0]) if count_row else 0
+
+        rows = self._conn.execute(
+            f"""
+            SELECT {_SELECT_COLUMNS}
+            FROM {_TABLE}
+            {where}
+            ORDER BY posted_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            [*params, limit, offset],
+        ).fetchall()
+
+        posts = [_row_to_gold_post_search(row) for row in rows]
+        return posts, total
