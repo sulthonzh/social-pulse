@@ -20,12 +20,12 @@ from src.application.use_cases.enrich_post import EnrichPostUseCase
 from src.domain.entities.raw_post import RawPost
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.ai.language_detector import LinguaLanguageDetector
-from src.infrastructure.ai.sentiment_analyzer import TransformerSentimentAnalyzer
-from src.infrastructure.ai.topic_extractor import KeyBERTTopicExtractor
 from src.infrastructure.ai.openai_client import OpenAIClient
 from src.infrastructure.ai.openai_language_detector import OpenAILanguageDetector
 from src.infrastructure.ai.openai_sentiment_analyzer import OpenAISentimentAnalyzer
 from src.infrastructure.ai.openai_topic_extractor import OpenAITopicExtractor
+from src.infrastructure.ai.sentiment_analyzer import TransformerSentimentAnalyzer
+from src.infrastructure.ai.topic_extractor import KeyBERTTopicExtractor
 from src.infrastructure.persistence.duckdb_ai_enrichment_repository import (
     DuckDBAIEnrichmentRepository,
 )
@@ -43,6 +43,12 @@ from src.shared.config import settings
 
 if TYPE_CHECKING:
     import duckdb
+
+    from src.domain.interfaces import (
+        LanguageDetector,
+        SentimentAnalyzer,
+        TopicExtractor,
+    )
 
 logger = structlog.get_logger()
 
@@ -119,6 +125,10 @@ class AIEnrichmentWorker:
         enriched_post_repo = DuckDBEnrichedPostRepository(conn)
         ai_enrichment_repo = DuckDBAIEnrichmentRepository(conn)
         ai_job_repo = DuckDBAIJobRepository(conn)
+
+        sentiment_analyzer: SentimentAnalyzer
+        topic_extractor: TopicExtractor
+        language_detector: LanguageDetector
 
         if settings.ai_provider == "openai":
             openai_client = OpenAIClient(

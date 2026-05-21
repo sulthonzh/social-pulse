@@ -14,7 +14,6 @@ from src.presentation.components.filters import (
 )
 from src.shared.config import get_db_connection
 
-
 _SENTIMENT_COLOR = {
     "positive": "color: #22c55e; font-weight: bold",
     "negative": "color: #ef4444; font-weight: bold",

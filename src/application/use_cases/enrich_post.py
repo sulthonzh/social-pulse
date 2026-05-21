@@ -15,6 +15,8 @@ from src.domain.value_objects.ai_job_status import AIJobStatus
 from src.domain.value_objects.ai_job_type import AIJobType
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from src.domain.entities.raw_post import RawPost
     from src.domain.interfaces import (
         AIEnrichmentRepository,
@@ -179,7 +181,12 @@ class EnrichPostUseCase:
 
         return saved_post
 
-    async def _retry_ai_call(self, coro_factory, operation_name: str, job_id: str | None = None):
+    async def _retry_ai_call(
+        self,
+        coro_factory: Callable[[], Awaitable[Any]],
+        operation_name: str,
+        job_id: str | None = None,
+    ) -> Any:
         """Retry an async AI call with exponential backoff."""
         last_exc: Exception | None = None
         for attempt in range(1, self._max_retries + 1):
@@ -200,6 +207,7 @@ class EnrichPostUseCase:
                         error=str(exc),
                     )
                     await asyncio.sleep(wait_time)
+        assert last_exc is not None
         raise last_exc
 
     @staticmethod
@@ -207,7 +215,7 @@ class EnrichPostUseCase:
         payload: dict[str, Any] | None = raw_post.raw_payload
         if payload is None:
             return ""
-        return payload.get("text", "")
+        return str(payload.get("text", ""))
 
     @staticmethod
     def _parse_datetime(value: Any) -> datetime | None:

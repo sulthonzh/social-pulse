@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import structlog
 
@@ -12,7 +12,7 @@ logger = structlog.get_logger()
 
 
 class _PipelineCallable(Protocol):
-    def __call__(self, text: str, **kwargs: Any) -> list[dict[str, Any]]: ...
+    def __call__(self, text: str, **kwargs: Any) -> list[list[dict[str, Any]]]: ...
 
 
 def _map_label(raw_label: str) -> SentimentLabel:
@@ -38,10 +38,13 @@ class TransformerSentimentAnalyzer:
         if self._pipeline is None:
             from transformers import pipeline as hf_pipeline  # noqa: PLC0415
 
-            self._pipeline = hf_pipeline(
-                "sentiment-analysis",
-                model=self._model_name,
-                top_k=3,
+            self._pipeline = cast(
+                "_PipelineCallable",
+                hf_pipeline(
+                    "text-classification",
+                    model=self._model_name,
+                    top_k=3,
+                ),
             )
             self._loaded = True
         return self._pipeline
@@ -64,20 +67,23 @@ class TransformerSentimentAnalyzer:
 
         truncated = text[:512]
         pipe = self._ensure_pipeline()
-        results = await asyncio.to_thread(pipe, truncated)
-        best = max(results[0], key=lambda r: r["score"])
+        raw_nested: list[list[dict[str, Any]]] = await asyncio.to_thread(
+            lambda: pipe(truncated)
+        )
+        best = max(raw_nested[0], key=lambda r: r["score"])
         label = _map_label(best["label"])
+        score = float(best["score"])
 
         logger.debug(
             "sentiment_analyzed",
             label=label,
-            confidence=best["score"],
+            confidence=score,
             text_len=len(truncated),
         )
 
         return SentimentResult(
             label=label,
-            confidence=best["score"],
+            confidence=score,
             model_name=self._model_name,
             model_version=self._get_model_version(),
         )

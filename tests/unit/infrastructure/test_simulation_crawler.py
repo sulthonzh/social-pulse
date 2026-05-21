@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from src.domain.entities.raw_post import RawPost
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.crawling.simulation_crawler import SimulationCrawler
+
+if TYPE_CHECKING:
+    from src.domain.entities.raw_post import RawPost
 
 
 def _payload(post: RawPost) -> dict[str, Any]:

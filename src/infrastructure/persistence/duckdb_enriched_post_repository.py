@@ -72,9 +72,7 @@ def _row_to_enriched_post(row: tuple[object, ...]) -> EnrichedPost:
         view_count=int(str(raw_view_count)),
         post_url=str(raw_post_url) if raw_post_url is not None else None,
         is_retweet=bool(raw_is_retweet),
-        created_at=_resolve_datetime(raw_created_at)
-        if raw_created_at is not None
-        else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
 
