@@ -10,7 +10,7 @@ import structlog
 from src.application.use_cases.ingest_crawl import IngestCrawlRun
 from src.domain.entities.search_request import SearchRequest
 from src.domain.value_objects.platform import Platform
-from src.infrastructure.crawling.twitter_crawler import TwitterCrawler
+from src.infrastructure.crawling import create_crawler
 from src.infrastructure.persistence.duckdb_crawl_run_repository import DuckDBCrawlRunRepository
 from src.infrastructure.persistence.duckdb_post_repository import DuckDBPostRepository
 from src.infrastructure.persistence.duckdb_search_request_repository import (
@@ -41,7 +41,7 @@ def main() -> None:
             search_repo = DuckDBSearchRequestRepository(conn)
             crawl_repo = DuckDBCrawlRunRepository(conn)
             post_repo = DuckDBPostRepository(conn)
-            crawler = TwitterCrawler()
+            crawler = create_crawler()
 
             use_case = IngestCrawlRun(search_repo, crawl_repo, post_repo)
 
