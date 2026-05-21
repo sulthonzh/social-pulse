@@ -695,7 +695,7 @@ class TestEnrichPostUseCase:
             topic_extractor,
             language_detector,
             enriched_post_repo,
-            ai_enrichment_repo,
+            _ai_enrichment_repo,
             ai_job_repo,
         ) = _build_use_case()
 

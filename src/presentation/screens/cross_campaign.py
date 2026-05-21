@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import duckdb
 import pandas as pd
 import streamlit as st
 
@@ -17,28 +16,21 @@ from src.shared.config import get_db_connection
 _MIN_CAMPAIGNS_FOR_COMPARISON = 2
 
 
-def _get_conn() -> duckdb.DuckDBPyConnection:
-    return get_db_connection()
-
-
-def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
-    rows = conn.execute(
-        """
-        SELECT DISTINCT search_request_id, keyword, platform
-        FROM gold.gold_post_search
-        ORDER BY keyword
-        """
-    ).fetchall()
-    return [{"id": str(r[0]), "keyword": str(r[1]), "platform": str(r[2])} for r in rows]
-
-
 def render() -> None:
     st.header("Cross-Campaign Comparison")
 
     conn = None
     try:
-        conn = _get_conn()
-        campaigns = _get_campaigns(conn)
+        conn = get_db_connection()
+
+        from src.application.use_cases.get_campaigns import GetCampaigns  # noqa: PLC0415
+        from src.infrastructure.persistence.duckdb_gold_post_search_repository import (  # noqa: PLC0415
+            DuckDBGoldPostSearchRepository,
+        )
+
+        repo = DuckDBGoldPostSearchRepository(conn)
+        campaigns_uc = GetCampaigns(repo)
+        campaigns: list[dict[str, Any]] = campaigns_uc.execute()
     except Exception:
         campaigns = []
 
