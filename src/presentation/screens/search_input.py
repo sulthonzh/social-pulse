@@ -155,7 +155,7 @@ def render() -> None:
 
     with st.form("search_form"):
         keyword = st.text_input("Keyword", placeholder="e.g. data engineering")
-        platform_choice = st.selectbox("Platform", ["twitter", "facebook", "instagram"])
+        platform_choice = st.selectbox("Platform", ["twitter", "facebook", "instagram", "youtube", "reddit"])
 
         # The date input can return different types depending on how many dates are selected
         start_date_input = st.date_input(

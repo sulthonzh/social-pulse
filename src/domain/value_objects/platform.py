@@ -9,3 +9,5 @@ class Platform(StrEnum):
     TWITTER = "twitter"
     FACEBOOK = "facebook"
     INSTAGRAM = "instagram"
+    YOUTUBE = "youtube"
+    REDDIT = "reddit"
