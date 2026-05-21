@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.raw_post import RawPost
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -74,7 +77,6 @@ def _post_to_params(post: RawPost) -> tuple[object, ...]:
 
 
 class DuckDBPostRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 

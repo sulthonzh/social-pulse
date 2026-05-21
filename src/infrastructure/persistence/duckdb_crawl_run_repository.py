@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
-from datetime import datetime
 
 from src.domain.entities.crawl_run import CrawlRun
 from src.domain.value_objects.crawl_status import CrawlStatus
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -19,10 +22,22 @@ _COLUMNS = (
 
 
 def _row_to_crawl_run(row: tuple[object, ...]) -> CrawlRun:
-    raw_id, raw_sr_id, raw_platform, raw_status, raw_posts, raw_err, raw_started, raw_completed = row
-    started = raw_started if isinstance(raw_started, datetime) else datetime.fromisoformat(str(raw_started))
-    completed = raw_completed if raw_completed is None else (
-        raw_completed if isinstance(raw_completed, datetime) else datetime.fromisoformat(str(raw_completed))
+    raw_id, raw_sr_id, raw_platform, raw_status, raw_posts, raw_err, raw_started, raw_completed = (
+        row
+    )
+    started = (
+        raw_started
+        if isinstance(raw_started, datetime)
+        else datetime.fromisoformat(str(raw_started))
+    )
+    completed = (
+        raw_completed
+        if raw_completed is None
+        else (
+            raw_completed
+            if isinstance(raw_completed, datetime)
+            else datetime.fromisoformat(str(raw_completed))
+        )
     )
     return CrawlRun(
         id=UUID(str(raw_id)),
@@ -37,7 +52,6 @@ def _row_to_crawl_run(row: tuple[object, ...]) -> CrawlRun:
 
 
 class DuckDBCrawlRunRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 

@@ -81,12 +81,10 @@ def _create_bronze_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON bronze.bronze_posts(search_request_id)"
     )
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_bronze_posts_platform"
-        "    ON bronze.bronze_posts(platform)"
+        "CREATE INDEX IF NOT EXISTS idx_bronze_posts_platform    ON bronze.bronze_posts(platform)"
     )
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_bronze_posts_fetched"
-        "    ON bronze.bronze_posts(fetched_at)"
+        "CREATE INDEX IF NOT EXISTS idx_bronze_posts_fetched    ON bronze.bronze_posts(fetched_at)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_bronze_crawl_runs_search"
@@ -170,12 +168,10 @@ def _create_silver_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON silver.silver_posts(search_request_id)"
     )
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_silver_posts_platform"
-        "    ON silver.silver_posts(platform)"
+        "CREATE INDEX IF NOT EXISTS idx_silver_posts_platform    ON silver.silver_posts(platform)"
     )
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_silver_posts_posted"
-        "    ON silver.silver_posts(posted_at)"
+        "CREATE INDEX IF NOT EXISTS idx_silver_posts_posted    ON silver.silver_posts(posted_at)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_silver_posts_author"
@@ -199,18 +195,11 @@ def _create_silver_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON silver.silver_ai_enrichment(language)"
     )
 
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_jobs_status    ON silver.ai_jobs(status)")
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_ai_jobs_status"
-        "    ON silver.ai_jobs(status)"
+        "CREATE INDEX IF NOT EXISTS idx_ai_jobs_type_status    ON silver.ai_jobs(job_type, status)"
     )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_ai_jobs_type_status"
-        "    ON silver.ai_jobs(job_type, status)"
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_ai_jobs_post"
-        "    ON silver.ai_jobs(silver_post_id)"
-    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_jobs_post    ON silver.ai_jobs(silver_post_id)")
 
 
 def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
@@ -266,8 +255,7 @@ def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON gold.gold_post_search(topic_label)"
     )
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_gold_post_search_lang"
-        "    ON gold.gold_post_search(language)"
+        "CREATE INDEX IF NOT EXISTS idx_gold_post_search_lang    ON gold.gold_post_search(language)"
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_gold_post_search_request"

@@ -55,15 +55,11 @@ class TwitterCrawler(BaseCrawler):
                 "start_time": f"{start_date}T00:00:00Z",
                 "end_time": f"{end_date}T23:59:59Z",
                 "max_results": min(limit, _TWITTER_API_MAX_PER_REQUEST),
-                "tweet.fields": (
-                    "created_at,author_id,text,public_metrics,lang"
-                ),
+                "tweet.fields": ("created_at,author_id,text,public_metrics,lang"),
             }
 
             try:
-                response = await client.get(
-                    "/tweets/search/recent", params=params
-                )
+                response = await client.get("/tweets/search/recent", params=params)
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
                 logger.error(
@@ -71,14 +67,10 @@ class TwitterCrawler(BaseCrawler):
                     exc.response.status_code,
                     exc.response.text,
                 )
-                raise CrawlError(
-                    f"Twitter API returned {exc.response.status_code}"
-                ) from exc
+                raise CrawlError(f"Twitter API returned {exc.response.status_code}") from exc
             except httpx.RequestError as exc:
                 logger.error("Twitter request failed: %s", exc)
-                raise CrawlError(
-                    f"Twitter request failed: {exc}"
-                ) from exc
+                raise CrawlError(f"Twitter request failed: {exc}") from exc
 
             data = response.json()
             tweets = data.get("data", [])
@@ -99,9 +91,7 @@ class TwitterCrawler(BaseCrawler):
                 if len(posts) >= limit:
                     break
 
-        logger.info(
-            "Crawled %d tweets for keyword '%s'", len(posts), keyword
-        )
+        logger.info("Crawled %d tweets for keyword '%s'", len(posts), keyword)
         return posts
 
     async def health_check(self) -> bool:
@@ -113,9 +103,7 @@ class TwitterCrawler(BaseCrawler):
         try:
             async with httpx.AsyncClient(
                 base_url=self._base_url,
-                headers={
-                    "Authorization": f"Bearer {self._bearer_token}"
-                },
+                headers={"Authorization": f"Bearer {self._bearer_token}"},
                 timeout=10,
             ) as client:
                 response = await client.get(

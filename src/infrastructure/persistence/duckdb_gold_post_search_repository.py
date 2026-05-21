@@ -88,7 +88,9 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         posted_at=_resolve_datetime(raw_posted_at),
         post_url=_resolve_str(raw_post_url),
         sentiment=_resolve_str(raw_sentiment),
-        sentiment_confidence=float(str(raw_sentiment_confidence)) if raw_sentiment_confidence is not None else None,
+        sentiment_confidence=float(str(raw_sentiment_confidence))
+        if raw_sentiment_confidence is not None
+        else None,
         topic_label=_resolve_str(raw_topic_label),
         language=_resolve_str(raw_language),
         hashtags=_resolve_str_list(raw_hashtags),
@@ -129,7 +131,6 @@ def _post_to_params(post: GoldPostSearch) -> tuple[object, ...]:
 
 
 class DuckDBGoldPostSearchRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 
@@ -141,7 +142,7 @@ class DuckDBGoldPostSearchRepository:
         placeholders = ",".join(["?"] * len(ids))
 
         before_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
             ids,
         ).fetchone()
         count_before = int(str(before_row[0])) if before_row is not None else 0
@@ -152,12 +153,12 @@ class DuckDBGoldPostSearchRepository:
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
             VALUES ({",".join(["?"] * 21)})
-            """,  # noqa: S608
+            """,
             params,
         )
 
         after_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",  # noqa: S608
+            f"SELECT count(*) FROM {_TABLE} WHERE id IN ({placeholders})",
             ids,
         ).fetchone()
         count_after = int(str(after_row[0])) if after_row is not None else 0
@@ -170,7 +171,9 @@ class DuckDBGoldPostSearchRepository:
         )
         return inserted
 
-    def get_by_keyword(self, keyword: str, limit: int = 100, offset: int = 0) -> list[GoldPostSearch]:
+    def get_by_keyword(
+        self, keyword: str, limit: int = 100, offset: int = 0
+    ) -> list[GoldPostSearch]:
         rows = self._conn.execute(
             f"""
             SELECT {_SELECT_COLUMNS}
@@ -178,14 +181,14 @@ class DuckDBGoldPostSearchRepository:
             WHERE keyword = ?
             ORDER BY posted_at DESC
             LIMIT ? OFFSET ?
-            """,  # noqa: S608
+            """,
             [keyword, limit, offset],
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
 
     def count_by_keyword(self, keyword: str) -> int:
         result_row = self._conn.execute(
-            f"SELECT count(*) FROM {_TABLE} WHERE keyword = ?",  # noqa: S608
+            f"SELECT count(*) FROM {_TABLE} WHERE keyword = ?",
             [keyword],
         ).fetchone()
         return int(str(result_row[0])) if result_row is not None else 0
@@ -198,11 +201,14 @@ class DuckDBGoldPostSearchRepository:
             WHERE keyword = ?
             GROUP BY sentiment
             ORDER BY cnt DESC
-            """,  # noqa: S608
+            """,
             [keyword],
         ).fetchall()
         return [
-            {"sentiment": str(row[0]) if row[0] is not None else "unknown", "count": int(str(row[1]))}
+            {
+                "sentiment": str(row[0]) if row[0] is not None else "unknown",
+                "count": int(str(row[1])),
+            }
             for row in rows
         ]
 
@@ -246,7 +252,7 @@ class DuckDBGoldPostSearchRepository:
             WHERE {where}
             ORDER BY posted_at DESC
             LIMIT ? OFFSET ?
-            """,  # noqa: S608
+            """,
             params,
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]
@@ -258,7 +264,7 @@ class DuckDBGoldPostSearchRepository:
             FROM {_TABLE}
             WHERE search_request_id = ?
             ORDER BY posted_at DESC
-            """,  # noqa: S608
+            """,
             [search_request_id],
         ).fetchall()
         return [_row_to_gold_post_search(row) for row in rows]

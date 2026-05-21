@@ -1,27 +1,28 @@
 from __future__ import annotations
 
+from datetime import date, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
-from datetime import date, datetime
 
 from src.domain.entities.search_request import SearchRequest
 from src.domain.value_objects.crawl_status import CrawlStatus
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
 _TABLE = "bronze.search_requests"
 
 _SELECT_COLUMNS = (
-    "id, keyword, start_date, end_date, platform, status, "
-    "posts_found, created_at, updated_at"
+    "id, keyword, start_date, end_date, platform, status, posts_found, created_at, updated_at"
 )
 
 
 class DuckDBSearchRequestRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 
@@ -71,9 +72,7 @@ class DuckDBSearchRequestRepository:
         ).fetchall()
         return [self._row_to_entity(row) for row in rows]
 
-    def update_status(
-        self, request_id: str, status: str, posts_found: int
-    ) -> None:
+    def update_status(self, request_id: str, status: str, posts_found: int) -> None:
         logger.debug(
             "updating_search_request_status",
             request_id=request_id,
@@ -106,10 +105,26 @@ class DuckDBSearchRequestRepository:
         ) = row
 
         resolved_id: UUID = id_val if isinstance(id_val, UUID) else UUID(str(id_val))
-        resolved_start: date = start_date_val if isinstance(start_date_val, date) and not isinstance(start_date_val, datetime) else date.fromisoformat(str(start_date_val))
-        resolved_end: date = end_date_val if isinstance(end_date_val, date) and not isinstance(end_date_val, datetime) else date.fromisoformat(str(end_date_val))
-        resolved_created: datetime = created_at_val if isinstance(created_at_val, datetime) else datetime.fromisoformat(str(created_at_val))
-        resolved_updated: datetime = updated_at_val if isinstance(updated_at_val, datetime) else datetime.fromisoformat(str(updated_at_val))
+        resolved_start: date = (
+            start_date_val
+            if isinstance(start_date_val, date) and not isinstance(start_date_val, datetime)
+            else date.fromisoformat(str(start_date_val))
+        )
+        resolved_end: date = (
+            end_date_val
+            if isinstance(end_date_val, date) and not isinstance(end_date_val, datetime)
+            else date.fromisoformat(str(end_date_val))
+        )
+        resolved_created: datetime = (
+            created_at_val
+            if isinstance(created_at_val, datetime)
+            else datetime.fromisoformat(str(created_at_val))
+        )
+        resolved_updated: datetime = (
+            updated_at_val
+            if isinstance(updated_at_val, datetime)
+            else datetime.fromisoformat(str(updated_at_val))
+        )
 
         return SearchRequest(
             id=resolved_id,
