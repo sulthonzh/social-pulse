@@ -14,7 +14,16 @@ venv/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
 *.duckdb
+*.duckdb.wal
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
 
 # Environment
 .env
@@ -53,3 +62,5 @@ development-phases/
 .playwright-mcp/
 
 .claude/
+
+*.log

@@ -29,6 +29,11 @@ dependencies = [
     "streamlit>=1.38.0",
     "plotly>=5.24.0",
 
+    # API Server
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.31.0",
+    "sse-starlette>=2.0.0",
+
     # Configuration & Utilities
     "pydantic>=2.9.0",
     "pydantic-settings>=2.5.0",
@@ -37,6 +42,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dbt = [
+    "dbt-duckdb>=1.10.0",
+]
 dev = [
     # Testing
     "pytest>=8.3.0",
@@ -154,6 +162,8 @@ module = [
     "plotly.*",
     "streamlit.*",
     "structlog.*",
+    "uvicorn.*",
+    "sse_starlette.*",
 ]
 ignore_missing_imports = true
 
