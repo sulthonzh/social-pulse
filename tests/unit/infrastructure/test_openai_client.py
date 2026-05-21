@@ -5,7 +5,7 @@ import json
 from typing import Any
 
 import pytest
-from src.infrastructure.ai.zai_client import ZAIClient
+from src.infrastructure.ai.openai_client import OpenAIClient
 
 
 def _run(coro):
@@ -49,11 +49,11 @@ class _FakeAsyncOpenAI:
 
 
 @pytest.mark.unit
-class TestZAIClient:
+class TestOpenAIClient:
     def test_chat_json_parses_response(self):
         payload = {"label": "positive", "confidence": 0.95}
         fake_client = _FakeAsyncOpenAI(json.dumps(payload))
-        client = ZAIClient(
+        client = OpenAIClient(
             api_key="test-key",
             base_url="https://fake.api/v4",
             model="glm-4.5-flash",
@@ -64,7 +64,7 @@ class TestZAIClient:
 
     def test_chat_json_empty_content_returns_empty(self):
         fake_client = _FakeAsyncOpenAI("")
-        client = ZAIClient(
+        client = OpenAIClient(
             api_key="test-key",
             base_url="https://fake.api/v4",
             model="glm-4.5-flash",
@@ -74,9 +74,9 @@ class TestZAIClient:
         assert result == {}
 
     def test_lazy_client_init(self):
-        client = ZAIClient(api_key="test-key")
+        client = OpenAIClient(api_key="test-key")
         assert client._client is None
 
     def test_model_accessible(self):
-        client = ZAIClient(api_key="test-key", model="glm-4")
+        client = OpenAIClient(api_key="test-key", model="glm-4")
         assert client._model == "glm-4"
