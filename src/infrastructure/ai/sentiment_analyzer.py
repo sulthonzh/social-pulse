@@ -46,6 +46,12 @@ class TransformerSentimentAnalyzer:
             self._loaded = True
         return self._pipeline
 
+    def _get_model_version(self) -> str:
+        """Extract model version identifier from model name."""
+        if "/" in self._model_name:
+            return self._model_name.split("/")[-1]
+        return self._model_name
+
     async def analyze(self, text: str) -> SentimentResult:
         if not text or not text.strip():
             logger.debug("empty_text_sentiment")
@@ -53,7 +59,7 @@ class TransformerSentimentAnalyzer:
                 label=SentimentLabel.NEUTRAL,
                 confidence=0.0,
                 model_name=self._model_name,
-                model_version="unknown",
+                model_version=self._get_model_version(),
             )
 
         truncated = text[:512]
@@ -73,5 +79,5 @@ class TransformerSentimentAnalyzer:
             label=label,
             confidence=best["score"],
             model_name=self._model_name,
-            model_version="unknown",
+            model_version=self._get_model_version(),
         )

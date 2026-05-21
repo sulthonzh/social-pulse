@@ -36,13 +36,20 @@ class KeyBERTTopicExtractor:
             self._kw_model = KeyBERT(self._model_name)
         return self._kw_model
 
+    def _get_model_version(self) -> str:
+        """Extract model version identifier from model name."""
+        if "/" in self._model_name:
+            return self._model_name.split("/")[-1]
+        return self._model_name
+
     async def extract(self, text: str) -> TopicResult:
         if not text or not text.strip():
             logger.debug("empty_text_topic")
             return TopicResult(
                 topic_label="unknown",
                 model_name=self._model_name,
-                model_version="unknown",
+                model_version=self._get_model_version(),
+                confidence=0.0,
             )
 
         model = self._ensure_model()
@@ -54,12 +61,18 @@ class KeyBERTTopicExtractor:
             top_n=1,
         )
 
-        topic = keywords[0][0] if keywords else "unknown"
+        if keywords:
+            topic = keywords[0][0]
+            confidence = keywords[0][1]
+        else:
+            topic = "unknown"
+            confidence = 0.0
 
-        logger.debug("topic_extracted", topic=topic, text_len=len(text))
+        logger.debug("topic_extracted", topic=topic, confidence=confidence, text_len=len(text))
 
         return TopicResult(
             topic_label=topic,
             model_name=self._model_name,
-            model_version="unknown",
+            model_version=self._get_model_version(),
+            confidence=confidence,
         )
