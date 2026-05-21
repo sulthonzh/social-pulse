@@ -49,26 +49,26 @@ class EnrichPostUseCase:
         text = self._extract_text(raw_post)
         now = datetime.now(UTC)
 
-        # Create and persist the EnrichedPost FIRST so the FK for ai_jobs resolves.
+        payload = raw_post.raw_payload if raw_post.raw_payload else {}
+        metrics = payload.get("public_metrics", {})
+
         enriched_post = EnrichedPost(
             bronze_post_id=raw_post.id,
             search_request_id=raw_post.search_request_id,
             platform=raw_post.platform,
             platform_id=raw_post.platform_id,
             author_handle=raw_post.author_handle,
-            author_name=raw_post.raw_payload.get("author_name") if raw_post.raw_payload else None,
+            author_name=payload.get("author_name"),
             post_text=text,
-            posted_at=self._parse_datetime(raw_post.raw_payload.get("posted_at"))
-            if raw_post.raw_payload
-            else None,
-            post_url=raw_post.raw_payload.get("post_url") if raw_post.raw_payload else None,
-            like_count=raw_post.raw_payload.get("like_count", 0) if raw_post.raw_payload else 0,
-            share_count=raw_post.raw_payload.get("share_count", 0) if raw_post.raw_payload else 0,
-            reply_count=raw_post.raw_payload.get("reply_count", 0) if raw_post.raw_payload else 0,
-            view_count=raw_post.raw_payload.get("view_count", 0) if raw_post.raw_payload else 0,
-            is_retweet=raw_post.raw_payload.get("is_retweet", False)
-            if raw_post.raw_payload
-            else False,
+            posted_at=self._parse_datetime(
+                payload.get("posted_at") or payload.get("created_at")
+            ),
+            post_url=payload.get("post_url"),
+            like_count=metrics.get("like_count", payload.get("like_count", 0)),
+            share_count=metrics.get("retweet_count", payload.get("share_count", 0)),
+            reply_count=metrics.get("reply_count", payload.get("reply_count", 0)),
+            view_count=metrics.get("impression_count", payload.get("view_count", 0)),
+            is_retweet=payload.get("is_retweet", False),
         )
 
         saved_post = self._enriched_post_repo.save(enriched_post)
