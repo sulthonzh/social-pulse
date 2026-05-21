@@ -4,36 +4,64 @@ A production-grade, open-source social media analytics platform that crawls, enr
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Presentation (Streamlit)                                       │
-│  ┌──────────────┬──────────────┬──────────────┬──────────────┐  │
-│  │ Search Input │ Post Explorer│  Campaign    │ Cross-Camp   │  │
-│  │    Screen    │    Screen    │  Analytics   │  Comparison  │  │
-│  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘  │
-├─────────┼──────────────┼──────────────┼──────────────┼──────────┤
-│  Application Layer (Use Cases)                                   │
-│  SearchPosts │ EnrichPost │ BuildPostSearch │ GetCampaignAnalytics │
-│  IngestCrawl │            │ BuildCampaignDaily │ GetCrossCampaign  │
-│              │            │ BuildCampaignSummary                    │
-├─────────────┬┴────────────┴──────────────┴──────────────┴─────────┤
-│  Domain Layer                                                    │
-│  Entities: RawPost, EnrichedPost, GoldPostSearch, ...           │
-│  Value Objects: Platform, SentimentLabel, AIJobStatus, ...      │
-│  Interfaces: Repository + AI adapter protocols                   │
-├─────────────────────────────────────────────────────────────────┤
-│  Infrastructure Layer                                            │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │  DuckDB      │  │  AI Adapters │  │  HTTP Crawlers       │   │
-│  │  Repositories│  │  (HuggingFace│  │  (httpx async)       │   │
-│  │  (9 repos)   │  │   + KeyBERT) │  │                      │   │
-│  └──────┬───────┘  └──────────────┘  └──────────────────────┘   │
-│         │                                                        │
-│  ┌──────┴───────────────────────────────────────────────────┐   │
-│  │  DuckDB (Bronze + Silver + Gold schemas)                  │   │
-│  │  10 tables across 3 schemas                               │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Presentation["Presentation Layer (Streamlit)"]
+        SI["Search Input Screen"]
+        PE["Post Explorer Screen"]
+        CA["Campaign Analytics Screen"]
+        CC["Cross-Campaign Comparison Screen"]
+    end
+
+    subgraph Application["Application Layer (Use Cases)"]
+        UC1["SearchPosts"]
+        UC2["IngestCrawl"]
+        UC3["EnrichPost"]
+        UC4["BuildPostSearch"]
+        UC5["BuildCampaignDaily"]
+        UC6["BuildCampaignSummary"]
+        UC7["GetCampaignAnalytics"]
+        UC8["GetCrossCampaign"]
+    end
+
+    subgraph Domain["Domain Layer"]
+        direction LR
+        ENT["Entities<br/>RawPost · EnrichedPost · GoldPostSearch<br/>SearchRequest · CrawlRun · AIJob<br/>AIEnrichment · SentimentResult<br/>TopicResult · LanguageResult<br/>GoldCampaignDaily · GoldCampaignSummary"]
+        VO["Value Objects<br/>Platform · SentimentLabel<br/>AIJobStatus · AIJobType<br/>CrawlStatus · DateRange"]
+        IF["Interfaces<br/>Repository Protocols<br/>AI Adapter Protocols"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        direction LR
+        REPOS["DuckDB Repositories<br/>(9 repositories + migrations)"]
+        AI["AI Adapters<br/>HuggingFace Transformers<br/>KeyBERT · Lingua"]
+        CRAWL["HTTP Crawlers<br/>httpx async"]
+    end
+
+    subgraph Data["DuckDB — Medallion Architecture"]
+        direction TB
+        Bronze["Bronze Schema<br/>search_requests · crawl_runs · raw_posts"]
+        Silver["Silver Schema<br/>enriched_posts · ai_enrichment · ai_jobs"]
+        Gold["Gold Schema<br/>gold_post_search<br/>gold_campaign_daily<br/>gold_campaign_summary"]
+    end
+
+    Presentation --> Application
+    Application --> Domain
+    Application --> Infrastructure
+    Infrastructure --> Domain
+    REPOS --> Data
+    AI --> Domain
+
+    Bronze -->|"AI Enrichment"| Silver
+    Silver -->|"Aggregation"| Gold
+
+    style Presentation fill:#2563eb,color:#fff
+    style Application fill:#7c3aed,color:#fff
+    style Domain fill:#059669,color:#fff
+    style Infrastructure fill:#d97706,color:#fff
+    style Bronze fill:#92400e,color:#fff
+    style Silver fill:#a1a1aa,color:#1e1e1e
+    style Gold fill:#ca8a04,color:#1e1e1e
 ```
 
 ### Medallion Data Architecture
@@ -150,8 +178,8 @@ tests/
 
 ## Test Coverage
 
-- **485 tests** across unit, integration, and E2E
-- **100% code coverage** on all application and infrastructure code
+- **461 tests passing** across unit, integration, and E2E (+ 17 E2E Playwright tests)
+- **100% code coverage** on all source modules
 - **pytest markers**: `unit`, `integration`, `e2e`, `slow`, `requires_api`
 
 ## Screens
