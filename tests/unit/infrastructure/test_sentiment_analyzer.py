@@ -101,4 +101,4 @@ class TestTransformerSentimentAnalyzer:
         )
         result = _run(analyzer.analyze("great day"))
         assert result.model_name == "tabularisai/multilingual-sentiment-analysis"
-        assert result.model_version == "unknown"
+        assert result.model_version == "multilingual-sentiment-analysis"

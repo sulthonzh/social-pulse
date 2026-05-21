@@ -58,11 +58,12 @@ def _make_sentiment_result(
     )
 
 
-def _make_topic_result(topic_label: str = "technology") -> TopicResult:
+def _make_topic_result(topic_label: str = "technology", confidence: float = 0.85) -> TopicResult:
     return TopicResult(
         topic_label=topic_label,
         model_name="topic-v1",
         model_version="1.0.0",
+        confidence=confidence,
     )
 
 
@@ -103,6 +104,7 @@ def _build_use_case():
         enriched_post_repo=enriched_post_repo,
         ai_enrichment_repo=ai_enrichment_repo,
         ai_job_repo=ai_job_repo,
+        max_retries=3,
     )
 
     return (

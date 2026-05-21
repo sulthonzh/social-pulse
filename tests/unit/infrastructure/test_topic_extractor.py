@@ -43,4 +43,4 @@ class TestKeyBERTTopicExtractor:
         extractor = self._make_extractor([("python", 0.9)])
         result = _run(extractor.extract("python is great"))
         assert result.model_name == "all-MiniLM-L6-v2"
-        assert result.model_version == "unknown"
+        assert result.model_version == "all-MiniLM-L6-v2"
