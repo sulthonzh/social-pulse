@@ -13,7 +13,7 @@ def render_sentiment_filter() -> str | None:
 
 
 def render_platform_filter() -> str | None:
-    options = ["All", "Twitter", "Facebook", "Instagram"]
+    options = ["All", "Twitter", "Facebook", "Instagram", "YouTube", "Reddit"]
     choice = st.sidebar.selectbox("Platform", options, index=0)
     return None if choice == "All" else choice.lower()
 
