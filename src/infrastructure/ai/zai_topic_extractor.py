@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import structlog
+
+from src.domain.entities.topic_result import TopicResult
+
+if TYPE_CHECKING:
+    from src.infrastructure.ai.zai_client import ZAIClient
+
+logger = structlog.get_logger()
+
+_SYSTEM_PROMPT = (
+    'You are a topic extractor. '
+    'Given the user text, extract the primary topic as a short label (1-4 words) '
+    'and a confidence score between 0.0 and 1.0. '
+    'Respond with a JSON object with exactly two keys: '
+    '"topic_label" (string) and "confidence" (float).'
+)
+
+_UNKNOWN_RESULT = TopicResult(
+    topic_label="unknown",
+    model_name="zai",
+    model_version="unknown",
+    confidence=0.0,
+)
+
+
+def _parse_response(data: dict[str, object], model: str) -> TopicResult:
+    topic_label = str(data.get("topic_label", "unknown")).strip() or "unknown"
+    confidence = float(data.get("confidence", 0.0))
+    confidence = max(0.0, min(1.0, confidence))
+
+    version = model.rsplit("/", maxsplit=1)[-1] if "/" in model else model
+    return TopicResult(
+        topic_label=topic_label,
+        model_name=f"zai/{model}",
+        model_version=version,
+        confidence=confidence,
+    )
+
+
+class ZAITopicExtractor:
+    def __init__(self, client: ZAIClient) -> None:
+        self._client = client
+
+    async def extract(self, text: str) -> TopicResult:
+        if not text or not text.strip():
+            logger.debug("empty_text_topic")
+            return _UNKNOWN_RESULT
+
+        data = await self._client.chat_json(
+            system_prompt=_SYSTEM_PROMPT,
+            user_prompt=text[:2000],
+        )
+
+        if not data:
+            logger.warning("zai_topic_empty_response")
+            return _UNKNOWN_RESULT
+
+        result = _parse_response(data, self._client._model)
+        logger.debug(
+            "topic_extracted",
+            topic=result.topic_label,
+            confidence=result.confidence,
+            text_len=len(text),
+        )
+        return result
