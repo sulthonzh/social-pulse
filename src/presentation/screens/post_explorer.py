@@ -12,11 +12,11 @@ from src.presentation.components.filters import (
     render_platform_filter,
     render_sentiment_filter,
 )
-from src.shared.config import settings
+from src.shared.config import get_db_connection
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(settings.db_path))
+    return get_db_connection()
 
 
 def _query_posts(

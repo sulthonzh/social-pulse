@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pydantic_settings import BaseSettings
+
+if TYPE_CHECKING:
+    import duckdb
 
 
 class Settings(BaseSettings):
@@ -23,3 +30,22 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+_db_migrated: bool = False
+
+
+def get_db_connection(read_only: bool = False) -> duckdb.DuckDBPyConnection:
+    """Open a DuckDB connection, running migrations once on first call."""
+    import duckdb  # noqa: PLC0415
+
+    from src.infrastructure.persistence.migrations import create_all_tables  # noqa: PLC0415
+
+    global _db_migrated  # noqa: PLW0603
+
+    conn = duckdb.connect(str(settings.db_path), read_only=read_only)
+
+    if not _db_migrated and not read_only:
+        create_all_tables(conn)
+        _db_migrated = True
+
+    return conn
