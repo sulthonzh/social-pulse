@@ -22,6 +22,10 @@ from src.domain.value_objects.platform import Platform
 from src.infrastructure.ai.language_detector import LinguaLanguageDetector
 from src.infrastructure.ai.sentiment_analyzer import TransformerSentimentAnalyzer
 from src.infrastructure.ai.topic_extractor import KeyBERTTopicExtractor
+from src.infrastructure.ai.zai_client import ZAIClient
+from src.infrastructure.ai.zai_language_detector import ZAILanguageDetector
+from src.infrastructure.ai.zai_sentiment_analyzer import ZAISentimentAnalyzer
+from src.infrastructure.ai.zai_topic_extractor import ZAITopicExtractor
 from src.infrastructure.persistence.duckdb_ai_enrichment_repository import (
     DuckDBAIEnrichmentRepository,
 )
@@ -116,13 +120,25 @@ class AIEnrichmentWorker:
         ai_enrichment_repo = DuckDBAIEnrichmentRepository(conn)
         ai_job_repo = DuckDBAIJobRepository(conn)
 
-        sentiment_analyzer = TransformerSentimentAnalyzer(
-            model_name=settings.sentiment_model,
-        )
-        topic_extractor = KeyBERTTopicExtractor(
-            model_name=settings.topic_model,
-        )
-        language_detector = LinguaLanguageDetector()
+        if settings.ai_provider == "zai":
+            zai_client = ZAIClient(
+                api_key=settings.zai_api_key,
+                base_url=settings.zai_base_url,
+                model=settings.zai_model,
+            )
+            sentiment_analyzer = ZAISentimentAnalyzer(zai_client)
+            topic_extractor = ZAITopicExtractor(zai_client)
+            language_detector = ZAILanguageDetector(zai_client)
+            logger.info("worker_using_zai", model=settings.zai_model)
+        else:
+            sentiment_analyzer = TransformerSentimentAnalyzer(
+                model_name=settings.sentiment_model,
+            )
+            topic_extractor = KeyBERTTopicExtractor(
+                model_name=settings.topic_model,
+            )
+            language_detector = LinguaLanguageDetector()
+            logger.info("worker_using_local")
 
         self._use_case = EnrichPostUseCase(
             sentiment_analyzer=sentiment_analyzer,
