@@ -1,0 +1,8 @@
+socialpulse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: /app/data/socialpulse.duckdb
+      schema: main
+      threads: 4

@@ -1,0 +1,197 @@
+version: 2
+
+models:
+  - name: gold_post_search
+    description: >
+      Flat, filterable post records enriched with AI results.
+      Powers the Post Explorer screen — supports filtering by keyword,
+      sentiment, platform, date range, topic, and language.
+      STRICT medallion: reads ONLY from Silver layer (silver_posts + silver_ai_enrichment).
+    meta:
+      medallion_layer: gold
+      screen: Post Explorer
+      screen_url: "/post-explorer"
+    columns:
+      - name: id
+        description: "Primary key, inherited from silver_posts.id (deterministic, same as bronze_post_id)"
+        tests:
+          - unique
+          - not_null
+      - name: search_request_id
+        description: "FK to bronze.search_requests — campaign identifier"
+        tests:
+          - not_null
+      - name: keyword
+        description: "Search keyword from original crawl request (via silver_posts)"
+        tests:
+          - not_null
+      - name: platform
+        description: "Source social media platform"
+        tests:
+          - not_null
+      - name: author_handle
+        description: "Post author handle/username"
+      - name: author_name
+        description: "Post author display name"
+      - name: post_text
+        description: "Full post content text"
+      - name: posted_at
+        description: "Original post creation timestamp"
+      - name: post_url
+        description: "URL to original post on platform"
+      - name: sentiment
+        description: "AI-classified sentiment: positive, negative, neutral"
+        meta:
+          valid_values: "positive | negative | neutral"
+      - name: sentiment_confidence
+        description: "Sentiment classification confidence (0.0–1.0)"
+      - name: topic_label
+        description: "AI-classified primary topic label"
+      - name: topic_confidence
+        description: "Topic classification confidence (0.0–1.0)"
+      - name: language
+        description: "Detected language code (ISO 639-1, e.g. 'en', 'id')"
+      - name: hashtags
+        description: "Array of detected hashtags"
+      - name: mentions
+        description: "Array of detected @mentions"
+      - name: like_count
+        description: "Number of likes"
+      - name: share_count
+        description: "Number of shares/retweets"
+      - name: reply_count
+        description: "Number of replies"
+      - name: view_count
+        description: "Number of views/impressions"
+      - name: ai_version
+        description: "AI enrichment model version"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Gold record creation timestamp"
+
+  - name: gold_campaign_daily
+    description: >
+      Daily campaign metrics aggregated by search request, keyword, and platform.
+      Powers the Campaign Analytics screen — sentiment trends, volume over time,
+      top hashtags, and engagement metrics per day.
+      STRICT medallion: reads ONLY from gold_post_search (Gold → Gold aggregation).
+    meta:
+      medallion_layer: gold
+      screen: Campaign Analytics
+      screen_url: "/campaign-analytics"
+    columns:
+      - name: id
+        description: "Deterministic hash key from group-by columns (search_request_id, keyword, platform, date)"
+        tests:
+          - unique
+          - not_null
+      - name: search_request_id
+        description: "FK to bronze.search_requests — campaign identifier"
+        tests:
+          - not_null
+      - name: keyword
+        description: "Search keyword"
+        tests:
+          - not_null
+      - name: platform
+        description: "Social media platform"
+        tests:
+          - not_null
+      - name: date
+        description: "Aggregation date (posted_at truncated to DATE)"
+        tests:
+          - not_null
+      - name: total_posts
+        description: "Total posts on this date/platform/campaign"
+        tests:
+          - not_null
+      - name: positive_count
+        description: "Count of positive-sentiment posts"
+      - name: negative_count
+        description: "Count of negative-sentiment posts"
+      - name: neutral_count
+        description: "Count of neutral-sentiment posts"
+      - name: avg_confidence
+        description: "Average sentiment confidence score, rounded to 4 decimals"
+      - name: top_hashtags
+        description: "Aggregated list of all hashtags from posts"
+      - name: top_topics
+        description: "Aggregated list of non-null topic labels"
+      - name: total_likes
+        description: "Sum of like counts"
+      - name: total_shares
+        description: "Sum of share counts"
+      - name: total_replies
+        description: "Sum of reply counts"
+      - name: total_views
+        description: "Sum of view counts"
+      - name: ai_version
+        description: "Max AI enrichment version used"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Gold record creation timestamp"
+
+  - name: gold_campaign_summary
+    description: >
+      Per-campaign summary with overall sentiment percentages, engagement totals,
+      date range, and platform breakdown. Powers the Cross-Campaign Comparison
+      screen — compare multiple campaigns side-by-side.
+      STRICT medallion: reads ONLY from gold_post_search (Gold → Gold aggregation).
+    meta:
+      medallion_layer: gold
+      screen: Cross-Campaign Comparison
+      screen_url: "/cross-campaign"
+    columns:
+      - name: id
+        description: "Deterministic hash key from group-by columns (search_request_id, keyword)"
+        tests:
+          - unique
+          - not_null
+      - name: search_request_id
+        description: "FK to bronze.search_requests — unique per campaign"
+        tests:
+          - not_null
+      - name: keyword
+        description: "Campaign search keyword"
+        tests:
+          - not_null
+      - name: start_date
+        description: "Earliest post date in campaign"
+      - name: end_date
+        description: "Latest post date in campaign"
+      - name: total_posts
+        description: "Total posts across entire campaign"
+        tests:
+          - not_null
+      - name: positive_pct
+        description: "Percentage of positive-sentiment posts (0-100)"
+      - name: negative_pct
+        description: "Percentage of negative-sentiment posts (0-100)"
+      - name: neutral_pct
+        description: "Percentage of neutral-sentiment posts (0-100)"
+      - name: avg_confidence
+        description: "Average sentiment confidence across all posts"
+      - name: total_engagement
+        description: "Sum of likes + shares + replies"
+      - name: total_likes
+        description: "Sum of all like counts"
+      - name: total_shares
+        description: "Sum of all share counts"
+      - name: total_replies
+        description: "Sum of all reply counts"
+      - name: total_views
+        description: "Sum of all view counts"
+      - name: top_hashtags
+        description: "Aggregated list of all hashtags"
+      - name: top_topics
+        description: "Aggregated list of non-null topic labels"
+      - name: platforms
+        description: "Sorted array of unique platforms in campaign"
+      - name: ai_version
+        description: "Max AI enrichment version used"
+        tests:
+          - not_null
+      - name: created_at
+        description: "Gold record creation timestamp"

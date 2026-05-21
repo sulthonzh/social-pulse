@@ -1,0 +1,107 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    description: "Raw ingested data — Bronze layer of medallion architecture. Created by the Python pipeline."
+    meta:
+      medallion_layer: bronze
+    tables:
+      - name: search_requests
+        description: "Search requests created by users to crawl social media posts"
+        columns:
+          - name: id
+            description: "Primary key UUID"
+            tests:
+              - unique
+              - not_null
+          - name: keyword
+            description: "Search keyword/hashtag"
+            tests:
+              - not_null
+          - name: start_date
+            description: "Start of date range for search"
+            tests:
+              - not_null
+          - name: end_date
+            description: "End of date range for search"
+            tests:
+              - not_null
+          - name: platform
+            description: "Target platform (twitter, etc.)"
+          - name: status
+            description: "Request status: pending, running, completed, failed"
+          - name: posts_found
+            description: "Number of posts found during search"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+
+      - name: bronze_crawl_runs
+        description: "Individual crawl runs executed for search requests"
+        columns:
+          - name: id
+            description: "Primary key UUID"
+            tests:
+              - unique
+              - not_null
+          - name: search_request_id
+            description: "FK to search_requests"
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source("bronze", "search_requests")
+                    field: id
+          - name: platform
+            description: "Platform crawled"
+            tests:
+              - not_null
+          - name: status
+            description: "Run status: running, completed, failed"
+          - name: posts_fetched
+            description: "Number of posts fetched in this run"
+          - name: error_message
+            description: "Error message if run failed"
+          - name: started_at
+            description: "Run start timestamp"
+          - name: completed_at
+            description: "Run completion timestamp"
+
+      - name: bronze_posts
+        description: "Raw posts fetched from social media, stored with JSON payload"
+        columns:
+          - name: id
+            description: "Primary key UUID"
+            tests:
+              - unique
+              - not_null
+          - name: search_request_id
+            description: "FK to search_requests"
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source("bronze", "search_requests")
+                    field: id
+          - name: crawl_run_id
+            description: "FK to bronze_crawl_runs"
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source("bronze", "bronze_crawl_runs")
+                    field: id
+          - name: platform
+            description: "Source platform"
+            tests:
+              - not_null
+          - name: platform_id
+            description: "Platform-specific post ID"
+          - name: author_handle
+            description: "Author's handle/username"
+          - name: raw_payload
+            description: "Raw JSON payload from platform API"
+          - name: fetched_at
+            description: "Timestamp when post was fetched"

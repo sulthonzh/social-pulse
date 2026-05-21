@@ -1,0 +1,47 @@
+# ============================================================
+# SocialPulse — dbt Multi-stage Dockerfile (uv-based)
+#
+# Targets: dbt-base, dbt-run, dbt-docs
+# Usage:
+#   docker compose build dbt
+#   docker compose --profile pipeline run --rm dbt
+#   docker compose --profile dbt-docs up dbt-docs
+# ============================================================
+
+# ---- Base: Python + dbt-duckdb (lean) ----
+FROM python:3.12-slim AS dbt-base
+
+WORKDIR /app
+
+# Install uv from official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dbt-duckdb directly — no need for full project deps (torch, etc.)
+RUN uv venv /app/.venv && \
+    . /app/.venv/bin/activate && \
+    uv pip install dbt-duckdb>=1.10.0
+
+# Copy dbt project
+COPY dbt/ dbt/
+
+# Override local profiles.yml with Docker-specific config
+# (uses absolute path /app/data/socialpulse.db instead of relative socialpulse.db)
+RUN cp dbt/profiles.docker.yml dbt/profiles.yml
+
+# ---- dbt-run: Execute dbt run + test ----
+FROM dbt-base AS dbt-run
+
+CMD ["sh", "-c", ". /app/.venv/bin/activate && dbt run --profiles-dir /app/dbt --project-dir /app/dbt && dbt test --profiles-dir /app/dbt --project-dir /app/dbt"]
+
+# ---- dbt-docs: Generate and serve dbt docs ----
+FROM dbt-base AS dbt-docs
+
+# Generate docs on startup, then serve
+CMD ["sh", "-c", ". /app/.venv/bin/activate && dbt docs generate --profiles-dir /app/dbt --project-dir /app/dbt && dbt docs serve --profiles-dir /app/dbt --project-dir /app/dbt --host 0.0.0.0 --port 8585"]
+
+EXPOSE 8585
