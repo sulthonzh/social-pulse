@@ -50,3 +50,5 @@ data/*.csv
 docs/
 
 .playwright-mcp/
+
+.claude/
