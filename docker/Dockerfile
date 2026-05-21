@@ -36,7 +36,9 @@ COPY tests/ tests/
 
 RUN uv run playwright install chromium --with-deps
 
-CMD ["uv", "run", "pytest", "--tb=short", "-v"]
+# Playwright's sync event loop conflicts with pytest-asyncio when run in the
+# same session.  Run unit+integration first, then E2E in a separate invocation.
+CMD ["sh", "-c", "uv run pytest --tb=short -v -m \"not e2e\" && uv run pytest --tb=short -v tests/e2e/"]
 
 # ---- Lint ----
 FROM base AS lint
