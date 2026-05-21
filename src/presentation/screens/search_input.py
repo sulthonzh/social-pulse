@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import date
-from pathlib import Path
 
 import duckdb
 import streamlit as st
@@ -11,7 +10,6 @@ from src.domain.value_objects.platform import Platform
 from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
 )
-from src.presentation.components.filters import render_date_range_filter
 from src.shared.config import settings
 
 
@@ -69,7 +67,7 @@ def render() -> None:
                         start_date = start
                         end_date = end
 
-                    from src.application.use_cases.search_posts import SearchPosts
+                    from src.application.use_cases.search_posts import SearchPosts  # noqa: PLC0415
 
                     conn = _get_conn()
                     repo = DuckDBSearchRequestRepository(conn)
@@ -104,9 +102,12 @@ def render() -> None:
         st.info("No search requests yet. Create one above.")
     else:
         for req in requests:
-            status_emoji = {"completed": "✅", "running": "⏳", "pending": "📝", "failed": "❌"}.get(
-                req["status"], "❓"
-            )
+            status_emoji = {
+                "completed": "✅",
+                "running": "⏳",
+                "pending": "📝",
+                "failed": "❌",
+            }.get(req["status"], "❓")
             st.markdown(
                 f"{status_emoji} **{req['keyword']}** — {req['platform']} — "
                 f"{req['start_date']} to {req['end_date']} — "

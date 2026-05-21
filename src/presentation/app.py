@@ -1,3 +1,5 @@
+import sys
+
 import streamlit as st
 
 from src.presentation.screens import (
@@ -6,6 +8,23 @@ from src.presentation.screens import (
     post_explorer,
     search_input,
 )
+
+
+def main() -> None:
+    """Entry point for the socialpulse console script."""
+    from streamlit.web import bootstrap  # noqa: PLC0415
+
+    if len(sys.argv) == 1:
+        sys.argv.extend(
+            [
+                "run",
+                __file__,
+                "--server.port=8501",
+                "--server.address=0.0.0.0",
+            ]
+        )
+    bootstrap.run(__file__, False, [], {})
+
 
 st.set_page_config(page_title="SocialPulse", layout="wide", page_icon="📊")
 

@@ -14,6 +14,8 @@ from src.presentation.components.charts import (
 from src.presentation.components.filters import render_multi_campaign_selector
 from src.shared.config import settings
 
+_MIN_CAMPAIGNS_FOR_COMPARISON = 2
+
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(str(settings.db_path))
@@ -27,10 +29,7 @@ def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
         ORDER BY keyword
         """
     ).fetchall()
-    return [
-        {"id": str(r[0]), "keyword": str(r[1]), "platform": str(r[2])}
-        for r in rows
-    ]
+    return [{"id": str(r[0]), "keyword": str(r[1]), "platform": str(r[2])} for r in rows]
 
 
 def render() -> None:
@@ -47,12 +46,12 @@ def render() -> None:
         return
 
     selected_ids = render_multi_campaign_selector(campaigns, key="cross_campaign")
-    if len(selected_ids) < 2:
+    if len(selected_ids) < _MIN_CAMPAIGNS_FOR_COMPARISON:
         st.warning("Select at least 2 campaigns to compare.")
         conn.close()
         return
 
-    from src.application.use_cases.get_cross_campaign import GetCrossCampaign
+    from src.application.use_cases.get_cross_campaign import GetCrossCampaign  # noqa: PLC0415
 
     try:
         use_case = GetCrossCampaign(conn)
@@ -80,21 +79,20 @@ def render() -> None:
 
     st.divider()
     st.subheader("Summary Table")
-    rows = []
-    for c in result.campaigns:
-        rows.append(
-            {
-                "Campaign": c.keyword,
-                "Platform": c.platform,
-                "Total Posts": c.total_posts,
-                "Positive %": c.positive_pct,
-                "Negative %": c.negative_pct,
-                "Neutral %": c.neutral_pct,
-                "Avg Confidence": round(c.avg_confidence, 3),
-                "Likes": c.total_likes,
-                "Shares": c.total_shares,
-                "Replies": c.total_replies,
-                "Views": c.total_views,
-            }
-        )
+    rows = [
+        {
+            "Campaign": c.keyword,
+            "Platform": c.platform,
+            "Total Posts": c.total_posts,
+            "Positive %": c.positive_pct,
+            "Negative %": c.negative_pct,
+            "Neutral %": c.neutral_pct,
+            "Avg Confidence": round(c.avg_confidence, 3),
+            "Likes": c.total_likes,
+            "Shares": c.total_shares,
+            "Replies": c.total_replies,
+            "Views": c.total_views,
+        }
+        for c in result.campaigns
+    ]
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
