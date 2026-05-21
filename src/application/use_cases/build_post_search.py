@@ -38,8 +38,11 @@ class BuildPostSearch:
             return 0
 
         gold_posts: list[GoldPostSearch] = []
+        post_ids = [str(post.id) for post in enriched_posts]
+        enrichment_map = self._ai_enrichment_repo.get_by_posts(post_ids)
+
         for post in enriched_posts:
-            enrichment = self._ai_enrichment_repo.get_by_post(str(post.id))
+            enrichment = enrichment_map.get(str(post.id))
             gold_post = GoldPostSearch(
                 search_request_id=post.search_request_id,
                 keyword=keyword,
@@ -54,6 +57,7 @@ class BuildPostSearch:
                 else None,
                 sentiment_confidence=enrichment.sentiment_confidence if enrichment else None,
                 topic_label=enrichment.topic_label if enrichment else None,
+                topic_confidence=enrichment.topic_confidence if enrichment else None,
                 language=enrichment.language if enrichment else None,
                 hashtags=enrichment.hashtags if enrichment else [],
                 mentions=enrichment.mentions if enrichment else [],

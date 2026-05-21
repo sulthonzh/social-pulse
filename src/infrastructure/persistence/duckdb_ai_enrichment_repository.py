@@ -18,7 +18,7 @@ _TABLE = "silver.silver_ai_enrichment"
 
 _INSERT_COLUMNS = (
     "id, silver_post_id, ai_version, hashtags, mentions, "
-    "language, topic_label, reach_estimate, "
+    "language, topic_label, topic_confidence, reach_estimate, "
     "sentiment, sentiment_confidence, "
     "metadata_model_name, metadata_model_version, "
     "sentiment_model_name, sentiment_model_version, "
@@ -59,6 +59,7 @@ def _row_to_ai_enrichment(row: tuple[object, ...]) -> AIEnrichment:
         raw_mentions,
         raw_language,
         raw_topic_label,
+        raw_topic_confidence,
         raw_reach_estimate,
         raw_sentiment,
         raw_sentiment_confidence,
@@ -81,6 +82,9 @@ def _row_to_ai_enrichment(row: tuple[object, ...]) -> AIEnrichment:
         mentions=_resolve_str_list(raw_mentions),
         language=_resolve_str(raw_language),
         topic_label=_resolve_str(raw_topic_label),
+        topic_confidence=float(str(raw_topic_confidence))
+        if raw_topic_confidence is not None
+        else None,
         reach_estimate=int(str(raw_reach_estimate)) if raw_reach_estimate is not None else None,
         sentiment=sentiment,
         sentiment_confidence=float(str(raw_sentiment_confidence))
@@ -103,6 +107,7 @@ def _enrichment_to_params(enrichment: AIEnrichment) -> tuple[object, ...]:
         enrichment.mentions,
         enrichment.language,
         enrichment.topic_label,
+        enrichment.topic_confidence,
         enrichment.reach_estimate,
         enrichment.sentiment.value if enrichment.sentiment is not None else None,
         enrichment.sentiment_confidence,
@@ -123,7 +128,7 @@ class DuckDBAIEnrichmentRepository:
             f"""
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             list(_enrichment_to_params(enrichment)),
         )
@@ -160,3 +165,28 @@ class DuckDBAIEnrichmentRepository:
             [search_request_id, ai_version],
         ).fetchall()
         return [_row_to_ai_enrichment(row) for row in rows]
+
+    def get_max_version(self, silver_post_id: str) -> int:
+        row = self._conn.execute(
+            f"SELECT MAX(ai_version) FROM {_TABLE} WHERE silver_post_id = ?",
+            [silver_post_id],
+        ).fetchone()
+        if row is None or row[0] is None:
+            return 0
+        return int(str(row[0]))
+
+    def get_by_posts(
+        self, silver_post_ids: list[str], ai_version: int = 1
+    ) -> dict[str, AIEnrichment]:
+        if not silver_post_ids:
+            return {}
+        placeholders = ", ".join("?" for _ in silver_post_ids)
+        rows = self._conn.execute(
+            f"""
+            SELECT {_SELECT_COLUMNS}
+            FROM {_TABLE}
+            WHERE silver_post_id IN ({placeholders}) AND ai_version = ?
+            """,
+            [*silver_post_ids, ai_version],
+        ).fetchall()
+        return {str(_resolve_uuid(row[1])): _row_to_ai_enrichment(row) for row in rows}

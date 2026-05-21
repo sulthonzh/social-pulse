@@ -80,10 +80,14 @@ class EnrichPostUseCase:
 
         saved_post = self._enriched_post_repo.save(enriched_post)
 
+        current_version = self._ai_enrichment_repo.get_max_version(str(saved_post.id))
+        next_version = current_version + 1
+
         ai_job = AIJob(
             silver_post_id=saved_post.id,
             job_type=AIJobType.FULL_ENRICHMENT,
             status=AIJobStatus.RUNNING,
+            ai_version=next_version,
             attempts=1,
             started_at=now,
         )
@@ -92,14 +96,17 @@ class EnrichPostUseCase:
             sentiment_result = await self._retry_ai_call(
                 lambda: self._sentiment_analyzer.analyze(text),
                 "sentiment_analysis",
+                job_id=str(ai_job.id),
             )
             topic_result = await self._retry_ai_call(
                 lambda: self._topic_extractor.extract(text),
                 "topic_extraction",
+                job_id=str(ai_job.id),
             )
             language_result = await self._retry_ai_call(
                 lambda: self._language_detector.detect(text),
                 "language_detection",
+                job_id=str(ai_job.id),
             )
         except Exception as exc:
             ai_job = ai_job.model_copy(
@@ -131,8 +138,10 @@ class EnrichPostUseCase:
 
         ai_enrichment = AIEnrichment(
             silver_post_id=saved_post.id,
+            ai_version=next_version,
             language=language_result.language_code,
             topic_label=topic_result.topic_label,
+            topic_confidence=topic_result.confidence,
             sentiment=sentiment_result.label,
             sentiment_confidence=sentiment_result.confidence,
             metadata_model_name=topic_result.model_name,
@@ -170,7 +179,7 @@ class EnrichPostUseCase:
 
         return saved_post
 
-    async def _retry_ai_call(self, coro_factory, operation_name: str):
+    async def _retry_ai_call(self, coro_factory, operation_name: str, job_id: str | None = None):
         """Retry an async AI call with exponential backoff."""
         last_exc: Exception | None = None
         for attempt in range(1, self._max_retries + 1):
@@ -178,6 +187,8 @@ class EnrichPostUseCase:
                 return await coro_factory()
             except Exception as exc:
                 last_exc = exc
+                if job_id:
+                    self._ai_job_repo.update_attempts(job_id, attempt)
                 if attempt < self._max_retries:
                     wait_time = 0.5 * (2 ** (attempt - 1))
                     logger.warning(

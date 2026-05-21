@@ -91,10 +91,12 @@ def _build_use_case():
         spec=["save", "save_batch", "get_by_bronze_post_id", "get_by_search", "count_by_search"],
     )
     ai_enrichment_repo = MagicMock(
-        spec=["save", "get_by_post", "get_by_search"],
+        spec=["save", "get_by_post", "get_by_search", "get_max_version"],
     )
+    ai_enrichment_repo.get_max_version.return_value = 0
+
     ai_job_repo = MagicMock(
-        spec=["save", "get_pending_jobs", "update_status"],
+        spec=["save", "get_pending_jobs", "update_status", "update_attempts"],
     )
 
     use_case = EnrichPostUseCase(
@@ -108,13 +110,13 @@ def _build_use_case():
     )
 
     return (
-        use_case,
-        sentiment_analyzer,
-        topic_extractor,
-        language_detector,
-        enriched_post_repo,
-        ai_enrichment_repo,
-        ai_job_repo,
+            use_case,
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+            ai_enrichment_repo,
+            ai_job_repo,
     )
 
 
@@ -628,3 +630,91 @@ class TestEnrichPostUseCase:
 
         saved_enrichment = ai_enrichment_repo.save.call_args[0][0]
         assert saved_enrichment.silver_post_id == result.id
+
+    async def test_topic_confidence_persisted(self):
+        (
+            use_case,
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+            ai_enrichment_repo,
+            _ai_job_repo,
+        ) = _build_use_case()
+
+        _setup_happy_path_mocks(
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+        )
+
+        topic_extractor.extract.return_value = _make_topic_result(
+            topic_label="data_engineering", confidence=0.92,
+        )
+
+        raw_post = _make_raw_post()
+        await use_case.execute(raw_post)
+
+        saved_enrichment = ai_enrichment_repo.save.call_args[0][0]
+        assert saved_enrichment.topic_confidence == 0.92
+
+    async def test_ai_version_increments_on_re_enrichment(self):
+        (
+            use_case,
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+            ai_enrichment_repo,
+            ai_job_repo,
+        ) = _build_use_case()
+
+        _setup_happy_path_mocks(
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+        )
+
+        ai_enrichment_repo.get_max_version.return_value = 1
+
+        raw_post = _make_raw_post()
+        await use_case.execute(raw_post)
+
+        saved_enrichment = ai_enrichment_repo.save.call_args[0][0]
+        assert saved_enrichment.ai_version == 2
+
+        saved_job = ai_job_repo.save.call_args[0][0]
+        assert saved_job.ai_version == 2
+
+    async def test_attempts_updated_on_retry(self):
+        (
+            use_case,
+            sentiment_analyzer,
+            topic_extractor,
+            language_detector,
+            enriched_post_repo,
+            ai_enrichment_repo,
+            ai_job_repo,
+        ) = _build_use_case()
+
+        sentiment_analyzer.analyze.side_effect = [
+            RuntimeError("transient failure"),
+            _make_sentiment_result(),
+        ]
+        topic_extractor.extract.return_value = _make_topic_result()
+        language_detector.detect.return_value = _make_language_result()
+
+        def _save_post(post: EnrichedPost) -> EnrichedPost:
+            return post
+
+        enriched_post_repo.save.side_effect = _save_post
+
+        raw_post = _make_raw_post()
+        await use_case.execute(raw_post)
+
+        saved_job = ai_job_repo.save.call_args[0][0]
+        ai_job_repo.update_attempts.assert_called_once_with(
+            str(saved_job.id), 1,
+        )

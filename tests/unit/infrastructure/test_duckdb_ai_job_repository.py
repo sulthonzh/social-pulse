@@ -172,3 +172,22 @@ class TestDuckDBAIJobRepository:
         assert found.started_at == job.started_at
         assert found.completed_at == job.completed_at
         assert found.created_at == job.created_at
+
+    def test_update_attempts_updates_count(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        job = _make_ai_job(post.id, attempts=0)
+        repo.save(job)
+
+        repo.update_attempts(str(job.id), 3)
+
+        rows = db_with_schema.execute(
+            "SELECT attempts FROM silver.ai_jobs WHERE id = ?",
+            [str(job.id)],
+        ).fetchall()
+        assert len(rows) == 1
+        assert int(str(rows[0][0])) == 3
+
+    def test_update_attempts_for_nonexistent_job_does_not_raise(self, db_with_schema):
+        repo = DuckDBAIJobRepository(db_with_schema)
+        repo.update_attempts(str(uuid4()), 5)

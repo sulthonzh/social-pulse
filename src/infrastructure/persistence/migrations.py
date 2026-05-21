@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import duckdb
 
-SCHEMA_VERSION: int = 1
+SCHEMA_VERSION: int = 2
 
 
 def create_all_tables(conn: duckdb.DuckDBPyConnection) -> None:
@@ -24,6 +24,7 @@ def create_all_tables(conn: duckdb.DuckDBPyConnection) -> None:
     _create_silver_schema(conn)
     _create_gold_schema(conn)
     _create_config_schema(conn)
+    run_migrations(conn)
 
 
 def _create_bronze_schema(conn: duckdb.DuckDBPyConnection) -> None:
@@ -128,6 +129,7 @@ def _create_silver_schema(conn: duckdb.DuckDBPyConnection) -> None:
             mentions                 VARCHAR[],
             language                 VARCHAR(10),
             topic_label              VARCHAR,
+            topic_confidence         FLOAT,
             reach_estimate           BIGINT,
             sentiment                VARCHAR(20),
             sentiment_confidence     FLOAT,
@@ -221,6 +223,7 @@ def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
             sentiment           VARCHAR(20),
             sentiment_confidence FLOAT,
             topic_label         VARCHAR,
+            topic_confidence    FLOAT,
             language            VARCHAR(10),
             hashtags            VARCHAR[],
             mentions            VARCHAR[],
@@ -346,6 +349,16 @@ def _create_config_schema(conn: duckdb.DuckDBPyConnection) -> None:
 
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS config.schema_migrations (
+            version     INTEGER PRIMARY KEY,
+            applied_at  TIMESTAMP DEFAULT current_timestamp,
+            description VARCHAR
+        )
+        """
+    )
+
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS config.ai_active_versions (
             id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             model_type          VARCHAR NOT NULL,
@@ -358,4 +371,32 @@ def _create_config_schema(conn: duckdb.DuckDBPyConnection) -> None:
             UNIQUE(model_type, ai_version)
         )
         """
+    )
+
+
+def _apply_migration(
+    conn: duckdb.DuckDBPyConnection, version: int, description: str, sql: str
+) -> None:
+    row = conn.execute(
+        "SELECT COUNT(*) FROM config.schema_migrations WHERE version = ?",
+        [version],
+    ).fetchone()
+    if row is not None and row[0] == 0:
+        conn.execute(sql)
+        conn.execute(
+            "INSERT INTO config.schema_migrations (version, description) VALUES (?, ?)",
+            [version, description],
+        )
+
+
+def run_migrations(conn: duckdb.DuckDBPyConnection) -> None:
+    """Run incremental migrations after initial schema creation."""
+    _apply_migration(
+        conn,
+        2,
+        "add topic_confidence to silver and gold tables",
+        """
+        ALTER TABLE silver.silver_ai_enrichment ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
+        ALTER TABLE gold.gold_post_search ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
+        """,
     )
