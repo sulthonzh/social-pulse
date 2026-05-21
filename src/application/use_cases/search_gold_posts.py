@@ -52,7 +52,9 @@ class SearchGoldPosts:
             "likes": int(post.like_count or 0),
             "shares": int(post.share_count or 0),
             "replies": int(post.reply_count or 0),
-            "platform": str(post.platform.value if hasattr(post.platform, "value") else post.platform or ""),
+            "platform": str(
+                post.platform.value if hasattr(post.platform, "value") else post.platform or ""
+            ),
             "topic": str(post.topic_label or ""),
             "language": str(post.language or ""),
         }

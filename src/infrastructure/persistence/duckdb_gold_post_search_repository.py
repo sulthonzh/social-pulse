@@ -283,8 +283,7 @@ class DuckDBGoldPostSearchRepository:
             """
         ).fetchall()
         return [
-            {"id": str(row[0]), "keyword": str(row[1]), "platform": str(row[2])}
-            for row in rows
+            {"id": str(row[0]), "keyword": str(row[1]), "platform": str(row[2])} for row in rows
         ]
 
     def search_posts(

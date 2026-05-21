@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _SYSTEM_PROMPT = (
-    'You are a sentiment classifier. '
+    "You are a sentiment classifier. "
     'Classify the sentiment of the user text as one of: "positive", "negative", "neutral". '
-    'Respond with a JSON object with exactly two keys: '
+    "Respond with a JSON object with exactly two keys: "
     '"label" (one of "positive", "negative", "neutral") '
     'and "confidence" (a float between 0.0 and 1.0).'
 )

@@ -63,9 +63,15 @@ class TestSimulationCrawler:
             platform=Platform.TWITTER,
         )
         required_keys = {
-            "id", "text", "posted_at", "author_id",
-            "author_name", "public_metrics", "lang",
-            "hashtags", "mentions",
+            "id",
+            "text",
+            "posted_at",
+            "author_id",
+            "author_name",
+            "public_metrics",
+            "lang",
+            "hashtags",
+            "mentions",
         }
         for post in posts:
             payload = _payload(post)

@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _SYSTEM_PROMPT = (
-    'You are a language detector. '
-    'Given the user text, detect the language and respond with a JSON object '
-    'with exactly two keys: '
+    "You are a language detector. "
+    "Given the user text, detect the language and respond with a JSON object "
+    "with exactly two keys: "
     '"language_code" (ISO 639-1 two-letter code, e.g. "en", "id", "fr") '
     'and "confidence" (float between 0.0 and 1.0).'
 )

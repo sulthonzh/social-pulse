@@ -26,7 +26,9 @@ class _MockClient:
 @pytest.mark.unit
 class TestParseResponse:
     def test_extracts_topic(self):
-        result = _parse_response({"topic_label": "machine learning", "confidence": 0.85}, "glm-4.5-flash")
+        result = _parse_response(
+            {"topic_label": "machine learning", "confidence": 0.85}, "glm-4.5-flash"
+        )
         assert result.topic_label == "machine learning"
         assert result.confidence == 0.85
 

@@ -51,8 +51,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert isinstance(result, SearchGoldPostsResult)
@@ -60,25 +65,32 @@ class TestSearchGoldPosts:
         assert len(result.posts) == 1
 
     def test_execute_converts_entity_to_presentation_dict(self):
-        posts = [_make_gold_post(
-            author_handle="johndoe",
-            author_name="John Doe",
-            post_text="Test post content",
-            sentiment="positive",
-            sentiment_confidence=0.92,
-            posted_at=datetime(2025, 3, 15, 14, 30, 0),
-            like_count=42,
-            share_count=7,
-            reply_count=3,
-            platform=Platform.TWITTER,
-            topic_label="technology",
-            language="en",
-        )]
+        posts = [
+            _make_gold_post(
+                author_handle="johndoe",
+                author_name="John Doe",
+                post_text="Test post content",
+                sentiment="positive",
+                sentiment_confidence=0.92,
+                posted_at=datetime(2025, 3, 15, 14, 30, 0),
+                like_count=42,
+                share_count=7,
+                reply_count=3,
+                platform=Platform.TWITTER,
+                topic_label="technology",
+                language="en",
+            )
+        ]
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         d = result.posts[0]
@@ -99,8 +111,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["author"] == "Jane Doe"
@@ -110,8 +127,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["author"] == "Unknown"
@@ -121,8 +143,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["confidence"] == 0.0
@@ -132,8 +159,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["date"] == ""
@@ -165,8 +197,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=[], total=0)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts == []
@@ -177,8 +214,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["confidence"] == 0.92
@@ -188,8 +230,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["text"] == ""
@@ -199,8 +246,13 @@ class TestSearchGoldPosts:
         use_case, _ = _build_use_case(posts=posts, total=1)
 
         result = use_case.execute(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=50,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=50,
         )
 
         assert result.posts[0]["sentiment"] == "unknown"

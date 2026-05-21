@@ -110,13 +110,13 @@ def _build_use_case():
     )
 
     return (
-            use_case,
-            sentiment_analyzer,
-            topic_extractor,
-            language_detector,
-            enriched_post_repo,
-            ai_enrichment_repo,
-            ai_job_repo,
+        use_case,
+        sentiment_analyzer,
+        topic_extractor,
+        language_detector,
+        enriched_post_repo,
+        ai_enrichment_repo,
+        ai_job_repo,
     )
 
 
@@ -650,7 +650,8 @@ class TestEnrichPostUseCase:
         )
 
         topic_extractor.extract.return_value = _make_topic_result(
-            topic_label="data_engineering", confidence=0.92,
+            topic_label="data_engineering",
+            confidence=0.92,
         )
 
         raw_post = _make_raw_post()
@@ -716,5 +717,6 @@ class TestEnrichPostUseCase:
 
         saved_job = ai_job_repo.save.call_args[0][0]
         ai_job_repo.update_attempts.assert_called_once_with(
-            str(saved_job.id), 1,
+            str(saved_job.id),
+            1,
         )

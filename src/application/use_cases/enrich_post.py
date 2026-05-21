@@ -69,9 +69,7 @@ class EnrichPostUseCase:
             author_handle=raw_post.author_handle,
             author_name=payload.get("author_name"),
             post_text=text,
-            posted_at=self._parse_datetime(
-                payload.get("posted_at") or payload.get("created_at")
-            ),
+            posted_at=self._parse_datetime(payload.get("posted_at") or payload.get("created_at")),
             post_url=payload.get("post_url"),
             like_count=metrics.get("like_count", payload.get("like_count", 0)),
             share_count=metrics.get("retweet_count", payload.get("share_count", 0)),

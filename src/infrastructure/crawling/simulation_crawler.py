@@ -97,7 +97,9 @@ def _random_datetime(start: date, end: date) -> datetime:
     delta = (end - start).days
     offset_days = 0 if delta <= 0 else random.randint(0, delta)
     base = datetime(start.year, start.month, start.day, tzinfo=UTC)
-    return base + timedelta(days=offset_days, hours=random.randint(0, 23), minutes=random.randint(0, 59))
+    return base + timedelta(
+        days=offset_days, hours=random.randint(0, 23), minutes=random.randint(0, 59)
+    )
 
 
 class SimulationCrawler(BaseCrawler):
@@ -121,12 +123,14 @@ class SimulationCrawler(BaseCrawler):
             text = template.format(keyword=keyword, hashtag=hashtag)
 
             extra_hashtags = random.sample(
-                _HASHTAG_EXTRAS, k=random.randint(1, 3),
+                _HASHTAG_EXTRAS,
+                k=random.randint(1, 3),
             )
             all_hashtags = list({hashtag, *extra_hashtags})
 
             mentions = random.sample(
-                _MENTION_POOL, k=random.randint(1, 3),
+                _MENTION_POOL,
+                k=random.randint(1, 3),
             )
 
             posted_at = _random_datetime(start_date, end_date)
