@@ -185,6 +185,17 @@ class GoldPostSearchRepository(Protocol):
         offset: int = 0,
     ) -> list[GoldPostSearch]: ...
     def get_by_search_request(self, search_request_id: str) -> list[GoldPostSearch]: ...
+    def get_campaigns(self) -> list[dict[str, str]]: ...
+    def search_posts(
+        self,
+        keyword: str | None,
+        sentiment: str | None,
+        platform: str | None,
+        start_date: object | None,
+        end_date: object | None,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[GoldPostSearch], int]: ...
 
 
 class GoldCampaignDailyRepository(Protocol):
