@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 import duckdb
 import streamlit as st
@@ -28,7 +28,7 @@ def _query_posts(
     end_date: Any | None,
     offset: int,
     limit: int,
-) -> tuple[list[dict], int]:
+) -> Tuple[List[Dict[str, Any]], int]:
     conditions: list[str] = []
     params: list[Any] = []
 
@@ -66,7 +66,7 @@ def _query_posts(
         [*params, limit, offset],
     ).fetchall()
 
-    posts = [
+    posts: List[Dict[str, Any]] = [
         {
             "author": r[0] or r[1] or "Unknown",
             "text": r[2] or "",
