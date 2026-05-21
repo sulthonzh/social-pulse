@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import structlog
 
 from src.domain.entities.crawl_run import CrawlRun
-from src.domain.entities.raw_post import RawPost
-from src.domain.entities.search_request import SearchRequest
-from src.domain.exceptions import CrawlError
-from src.domain.interfaces import Crawler, CrawlRunRepository, PostRepository, SearchRequestRepository
 from src.domain.value_objects.crawl_status import CrawlStatus
+
+if TYPE_CHECKING:
+    from src.domain.entities.search_request import SearchRequest
+    from src.domain.interfaces import (
+        Crawler,
+        CrawlRunRepository,
+        PostRepository,
+        SearchRequestRepository,
+    )
 
 logger = structlog.get_logger(__name__)
 
@@ -44,10 +51,12 @@ class IngestCrawlRun:
             )
 
             posts = [
-                post.model_copy(update={
-                    "search_request_id": saved_request.id,
-                    "crawl_run_id": saved_run.id,
-                })
+                post.model_copy(
+                    update={
+                        "search_request_id": saved_request.id,
+                        "crawl_run_id": saved_run.id,
+                    }
+                )
                 for post in raw_posts
             ]
 
@@ -74,10 +83,12 @@ class IngestCrawlRun:
                 keyword=saved_request.keyword,
             )
 
-            return saved_run.model_copy(update={
-                "status": CrawlStatus.COMPLETED,
-                "posts_fetched": saved_count,
-            })
+            return saved_run.model_copy(
+                update={
+                    "status": CrawlStatus.COMPLETED,
+                    "posts_fetched": saved_count,
+                }
+            )
 
         except Exception as exc:
             self._crawl_run_repo.update_status(

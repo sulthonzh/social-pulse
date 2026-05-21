@@ -62,11 +62,13 @@ class EnrichPostUseCase:
             topic_result = await self._topic_extractor.extract(text)
             language_result = await self._language_detector.detect(text)
         except Exception as exc:
-            ai_job = ai_job.model_copy(update={
-                "status": AIJobStatus.FAILED,
-                "error_message": str(exc),
-                "completed_at": datetime.now(UTC),
-            })
+            ai_job = ai_job.model_copy(
+                update={
+                    "status": AIJobStatus.FAILED,
+                    "error_message": str(exc),
+                    "completed_at": datetime.now(UTC),
+                }
+            )
             self._ai_job_repo.save(ai_job)
 
             logger.error(
@@ -88,13 +90,17 @@ class EnrichPostUseCase:
             author_handle=raw_post.author_handle,
             author_name=raw_post.raw_payload.get("author_name") if raw_post.raw_payload else None,
             post_text=text,
-            posted_at=self._parse_datetime(raw_post.raw_payload.get("posted_at")) if raw_post.raw_payload else None,
+            posted_at=self._parse_datetime(raw_post.raw_payload.get("posted_at"))
+            if raw_post.raw_payload
+            else None,
             post_url=raw_post.raw_payload.get("post_url") if raw_post.raw_payload else None,
             like_count=raw_post.raw_payload.get("like_count", 0) if raw_post.raw_payload else 0,
             share_count=raw_post.raw_payload.get("share_count", 0) if raw_post.raw_payload else 0,
             reply_count=raw_post.raw_payload.get("reply_count", 0) if raw_post.raw_payload else 0,
             view_count=raw_post.raw_payload.get("view_count", 0) if raw_post.raw_payload else 0,
-            is_retweet=raw_post.raw_payload.get("is_retweet", False) if raw_post.raw_payload else False,
+            is_retweet=raw_post.raw_payload.get("is_retweet", False)
+            if raw_post.raw_payload
+            else False,
         )
 
         saved_post = self._enriched_post_repo.save(enriched_post)
@@ -114,11 +120,13 @@ class EnrichPostUseCase:
         )
         self._ai_enrichment_repo.save(ai_enrichment)
 
-        completed_job = ai_job.model_copy(update={
-            "silver_post_id": saved_post.id,
-            "status": AIJobStatus.COMPLETED,
-            "completed_at": datetime.now(UTC),
-        })
+        completed_job = ai_job.model_copy(
+            update={
+                "silver_post_id": saved_post.id,
+                "status": AIJobStatus.COMPLETED,
+                "completed_at": datetime.now(UTC),
+            }
+        )
         self._ai_job_repo.save(completed_job)
 
         logger.info(

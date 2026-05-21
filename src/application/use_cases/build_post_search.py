@@ -17,7 +17,6 @@ logger = structlog.get_logger(__name__)
 
 
 class BuildPostSearch:
-
     def __init__(
         self,
         enriched_post_repo: EnrichedPostRepository,
@@ -50,7 +49,9 @@ class BuildPostSearch:
                 post_text=post.post_text,
                 posted_at=post.posted_at,
                 post_url=post.post_url,
-                sentiment=enrichment.sentiment.value if enrichment and enrichment.sentiment else None,
+                sentiment=enrichment.sentiment.value
+                if enrichment and enrichment.sentiment
+                else None,
                 sentiment_confidence=enrichment.sentiment_confidence if enrichment else None,
                 topic_label=enrichment.topic_label if enrichment else None,
                 language=enrichment.language if enrichment else None,
