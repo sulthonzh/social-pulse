@@ -33,7 +33,7 @@ class _FakeDetector:
     def __init__(self, return_value):
         self._return_value = return_value
 
-    def detect_language(self, text):
+    def detect_language_of(self, text):
         return self._return_value
 
 

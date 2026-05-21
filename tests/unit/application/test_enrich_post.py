@@ -272,12 +272,17 @@ class TestEnrichPostUseCase:
 
         sentiment_analyzer.analyze.side_effect = RuntimeError("model unavailable")
 
+        def _save_post(post: EnrichedPost) -> EnrichedPost:
+            return post
+
+        enriched_post_repo.save.side_effect = _save_post
+
         raw_post = _make_raw_post()
 
         with pytest.raises(EnrichmentError, match="model unavailable"):
             await use_case.execute(raw_post)
 
-        enriched_post_repo.save.assert_not_called()
+        enriched_post_repo.save.assert_called_once()
         ai_enrichment_repo.save.assert_not_called()
 
         saved_job = ai_job_repo.save.call_args[0][0]
@@ -298,12 +303,17 @@ class TestEnrichPostUseCase:
         sentiment_analyzer.analyze.return_value = _make_sentiment_result()
         topic_extractor.extract.side_effect = ConnectionError("API down")
 
+        def _save_post(post: EnrichedPost) -> EnrichedPost:
+            return post
+
+        enriched_post_repo.save.side_effect = _save_post
+
         raw_post = _make_raw_post()
 
         with pytest.raises(EnrichmentError, match="API down"):
             await use_case.execute(raw_post)
 
-        enriched_post_repo.save.assert_not_called()
+        enriched_post_repo.save.assert_called_once()
         ai_enrichment_repo.save.assert_not_called()
 
         saved_job = ai_job_repo.save.call_args[0][0]
@@ -325,12 +335,17 @@ class TestEnrichPostUseCase:
         topic_extractor.extract.return_value = _make_topic_result()
         language_detector.detect.side_effect = TimeoutError("request timed out")
 
+        def _save_post(post: EnrichedPost) -> EnrichedPost:
+            return post
+
+        enriched_post_repo.save.side_effect = _save_post
+
         raw_post = _make_raw_post()
 
         with pytest.raises(EnrichmentError, match="request timed out"):
             await use_case.execute(raw_post)
 
-        enriched_post_repo.save.assert_not_called()
+        enriched_post_repo.save.assert_called_once()
         ai_enrichment_repo.save.assert_not_called()
 
         saved_job = ai_job_repo.save.call_args[0][0]
@@ -434,13 +449,18 @@ class TestEnrichPostUseCase:
             sentiment_analyzer,
             _topic_extractor,
             _language_detector,
-            _enriched_post_repo,
+            enriched_post_repo,
             _ai_enrichment_repo,
             _ai_job_repo,
         ) = _build_use_case()
 
         original = ValueError("bad model output")
         sentiment_analyzer.analyze.side_effect = original
+
+        def _save_post(post: EnrichedPost) -> EnrichedPost:
+            return post
+
+        enriched_post_repo.save.side_effect = _save_post
 
         raw_post = _make_raw_post()
 
