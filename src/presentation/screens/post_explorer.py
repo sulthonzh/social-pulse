@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import duckdb
-import pandas as pd
 import streamlit as st
 
 from src.presentation.components.filters import (
@@ -64,7 +63,7 @@ def _query_posts(
         ORDER BY posted_at DESC
         LIMIT ? OFFSET ?
         """,
-        params + [limit, offset],
+        [*params, limit, offset],
     ).fetchall()
 
     posts = [

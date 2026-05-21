@@ -19,7 +19,10 @@ def render_sentiment_chart(data: list[dict[str, Any]]) -> None:
         .encode(
             x=alt.X("sentiment:N", title="Sentiment"),
             y=alt.Y("count:Q", title="Posts"),
-            color=alt.Color("sentiment:N", scale=alt.Scale(domain=list(color_map.keys()), range=list(color_map.values()))),
+            color=alt.Color(
+                "sentiment:N",
+                scale=alt.Scale(domain=list(color_map.keys()), range=list(color_map.values())),
+            ),
         )
         .properties(width=400, height=300)
     )

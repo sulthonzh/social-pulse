@@ -26,10 +26,7 @@ def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
         ORDER BY keyword
         """
     ).fetchall()
-    return [
-        {"id": str(r[0]), "keyword": str(r[1]), "platform": str(r[2])}
-        for r in rows
-    ]
+    return [{"id": str(r[0]), "keyword": str(r[1]), "platform": str(r[2])} for r in rows]
 
 
 def render() -> None:
@@ -47,10 +44,12 @@ def render() -> None:
 
     selected_id = render_campaign_selector(campaigns, key="campaign_analytics")
     if selected_id is None:
-        conn.close() if 'conn' in dir() else None
+        conn.close() if "conn" in dir() else None
         return
 
-    from src.application.use_cases.get_campaign_analytics import GetCampaignAnalytics
+    from src.application.use_cases.get_campaign_analytics import (  # noqa: PLC0415
+        GetCampaignAnalytics,
+    )
 
     try:
         analytics_uc = GetCampaignAnalytics(conn)
