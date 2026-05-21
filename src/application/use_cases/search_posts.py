@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from datetime import date
 from typing import TYPE_CHECKING
 
 import structlog
 
 from src.domain.entities.search_request import SearchRequest
-from src.domain.value_objects.platform import Platform
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from src.domain.interfaces import SearchRequestRepository
+    from src.domain.value_objects.platform import Platform
 
 logger = structlog.get_logger(__name__)
 

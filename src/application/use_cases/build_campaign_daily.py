@@ -26,7 +26,6 @@ def _top_n(items: list[str], n: int = 5) -> list[str]:
 
 
 class BuildCampaignDaily:
-
     def __init__(
         self,
         gold_post_search_repo: GoldPostSearchRepository,

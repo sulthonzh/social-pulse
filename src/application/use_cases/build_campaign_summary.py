@@ -24,7 +24,6 @@ def _top_n(items: list[str], n: int = 5) -> list[str]:
 
 
 class BuildCampaignSummary:
-
     def __init__(
         self,
         gold_post_search_repo: GoldPostSearchRepository,
@@ -44,7 +43,9 @@ class BuildCampaignSummary:
         total = len(posts)
         if total == 0:
             summary = GoldCampaignSummary(
-                search_request_id=posts[0].search_request_id if posts else __import__("uuid").UUID("00000000-0000-0000-0000-000000000000"),
+                search_request_id=posts[0].search_request_id
+                if posts
+                else __import__("uuid").UUID("00000000-0000-0000-0000-000000000000"),
                 keyword="",
                 start_date=start_date,
                 end_date=end_date,
@@ -71,9 +72,7 @@ class BuildCampaignSummary:
                 all_topics.append(p.topic_label)
             platform_set.add(p.platform.value)
 
-        total_engagement = sum(
-            p.like_count + p.share_count + p.reply_count for p in posts
-        )
+        total_engagement = sum(p.like_count + p.share_count + p.reply_count for p in posts)
 
         summary = GoldCampaignSummary(
             search_request_id=posts[0].search_request_id,
