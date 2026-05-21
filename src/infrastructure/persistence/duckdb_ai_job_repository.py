@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.ai_job import AIJob
 from src.domain.value_objects.ai_job_status import AIJobStatus
 from src.domain.value_objects.ai_job_type import AIJobType
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -62,7 +65,9 @@ def _row_to_ai_job(row: tuple[object, ...]) -> AIJob:
         error_message=_resolve_str(raw_error_message),
         started_at=_resolve_datetime(raw_started_at),
         completed_at=_resolve_datetime(raw_completed_at),
-        created_at=_resolve_datetime(raw_created_at) if raw_created_at is not None else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at)
+        if raw_created_at is not None
+        else datetime.now(),
     )
 
 
@@ -83,7 +88,6 @@ def _job_to_params(job: AIJob) -> tuple[object, ...]:
 
 
 class DuckDBAIJobRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.enriched_post import EnrichedPost
 from src.domain.value_objects.platform import Platform
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -69,7 +72,9 @@ def _row_to_enriched_post(row: tuple[object, ...]) -> EnrichedPost:
         view_count=int(str(raw_view_count)),
         post_url=str(raw_post_url) if raw_post_url is not None else None,
         is_retweet=bool(raw_is_retweet),
-        created_at=_resolve_datetime(raw_created_at) if raw_created_at is not None else datetime.now(),
+        created_at=_resolve_datetime(raw_created_at)
+        if raw_created_at is not None
+        else datetime.now(),
     )
 
 
@@ -95,7 +100,6 @@ def _post_to_params(post: EnrichedPost) -> tuple[object, ...]:
 
 
 class DuckDBEnrichedPostRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 

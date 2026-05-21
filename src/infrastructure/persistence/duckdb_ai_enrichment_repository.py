@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import duckdb
 import structlog
 
 from src.domain.entities.ai_enrichment import AIEnrichment
 from src.domain.value_objects.sentiment_label import SentimentLabel
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = structlog.get_logger()
 
@@ -80,7 +83,9 @@ def _row_to_ai_enrichment(row: tuple[object, ...]) -> AIEnrichment:
         topic_label=_resolve_str(raw_topic_label),
         reach_estimate=int(str(raw_reach_estimate)) if raw_reach_estimate is not None else None,
         sentiment=sentiment,
-        sentiment_confidence=float(str(raw_sentiment_confidence)) if raw_sentiment_confidence is not None else None,
+        sentiment_confidence=float(str(raw_sentiment_confidence))
+        if raw_sentiment_confidence is not None
+        else None,
         metadata_model_name=_resolve_str(raw_metadata_model_name),
         metadata_model_version=_resolve_str(raw_metadata_model_version),
         sentiment_model_name=_resolve_str(raw_sentiment_model_name),
@@ -110,7 +115,6 @@ def _enrichment_to_params(enrichment: AIEnrichment) -> tuple[object, ...]:
 
 
 class DuckDBAIEnrichmentRepository:
-
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
 
@@ -147,7 +151,7 @@ class DuckDBAIEnrichmentRepository:
     def get_by_search(self, search_request_id: str, ai_version: int = 1) -> list[AIEnrichment]:
         rows = self._conn.execute(
             f"""
-            SELECT e.{_SELECT_COLUMNS.replace(', ', ', e.')}
+            SELECT e.{_SELECT_COLUMNS.replace(", ", ", e.")}
             FROM {_TABLE} e
             JOIN silver.silver_posts sp ON e.silver_post_id = sp.id
             WHERE sp.search_request_id = ? AND e.ai_version = ?
