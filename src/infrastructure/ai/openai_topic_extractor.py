@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _SYSTEM_PROMPT = (
-    'You are a topic extractor. '
-    'Given the user text, extract the primary topic as a short label (1-4 words) '
-    'and a confidence score between 0.0 and 1.0. '
-    'Respond with a JSON object with exactly two keys: '
+    "You are a topic extractor. "
+    "Given the user text, extract the primary topic as a short label (1-4 words) "
+    "and a confidence score between 0.0 and 1.0. "
+    "Respond with a JSON object with exactly two keys: "
     '"topic_label" (string) and "confidence" (float).'
 )
 

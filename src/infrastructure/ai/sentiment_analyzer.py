@@ -67,9 +67,7 @@ class TransformerSentimentAnalyzer:
 
         truncated = text[:512]
         pipe = self._ensure_pipeline()
-        raw_nested: list[list[dict[str, Any]]] = await asyncio.to_thread(
-            lambda: pipe(truncated)
-        )
+        raw_nested: list[list[dict[str, Any]]] = await asyncio.to_thread(lambda: pipe(truncated))
         best = max(raw_nested[0], key=lambda r: r["score"])
         label = _map_label(best["label"])
         score = float(best["score"])

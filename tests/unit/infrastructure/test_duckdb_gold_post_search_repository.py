@@ -228,9 +228,7 @@ class TestDuckDBGoldPostSearchRepository:
         keywords = {c["keyword"] for c in campaigns}
         assert keywords == {"java", "python"}
 
-    def test_get_campaigns_returns_correct_fields(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_get_campaigns_returns_correct_fields(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         sr_id = uuid4()
         posts = [
@@ -257,9 +255,7 @@ class TestDuckDBGoldPostSearchRepository:
 
         assert campaigns == []
 
-    def test_get_campaigns_orders_by_keyword(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_get_campaigns_orders_by_keyword(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="zebra", search_request_id=uuid4()),
@@ -284,16 +280,19 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=10,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=10,
         )
 
         assert total == 3
         assert len(results) == 3
 
-    def test_search_posts_filters_by_keyword_ilike(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_filters_by_keyword_ilike(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(post_text="I love Python programming"),
@@ -302,17 +301,20 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword="python", sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=10,
+            keyword="python",
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=10,
         )
 
         assert total == 1
         assert len(results) == 1
         assert "Python" in results[0].post_text
 
-    def test_search_posts_filters_by_sentiment(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_filters_by_sentiment(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(keyword="python", sentiment="positive"),
@@ -321,16 +323,19 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment="positive", platform=None,
-            start_date=None, end_date=None, offset=0, limit=10,
+            keyword=None,
+            sentiment="positive",
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=10,
         )
 
         assert total == 1
         assert results[0].sentiment == "positive"
 
-    def test_search_posts_filters_by_platform(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_filters_by_platform(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(platform=Platform.TWITTER),
@@ -339,16 +344,19 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment=None, platform="twitter",
-            start_date=None, end_date=None, offset=0, limit=10,
+            keyword=None,
+            sentiment=None,
+            platform="twitter",
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=10,
         )
 
         assert total == 1
         assert results[0].platform == Platform.TWITTER
 
-    def test_search_posts_filters_by_date_range(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_filters_by_date_range(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(posted_at=datetime(2025, 1, 15, 10, 0, 0)),
@@ -358,39 +366,48 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         _, total = repo.search_posts(
-            keyword=None, sentiment=None, platform=None,
+            keyword=None,
+            sentiment=None,
+            platform=None,
             start_date=datetime(2025, 1, 1, 0, 0, 0),
             end_date=datetime(2025, 2, 28, 23, 59, 59),
-            offset=0, limit=10,
+            offset=0,
+            limit=10,
         )
 
         assert total == 2
 
-    def test_search_posts_paginates_results(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_paginates_results(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post() for _ in range(5)]
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=2,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=2,
         )
 
         assert total == 5
         assert len(results) == 2
 
-    def test_search_posts_offset_works(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_offset_works(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post() for _ in range(5)]
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=3, limit=2,
+            keyword=None,
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=3,
+            limit=2,
         )
 
         assert total == 5
@@ -402,16 +419,19 @@ class TestDuckDBGoldPostSearchRepository:
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
 
         results, total = repo.search_posts(
-            keyword="nonexistent", sentiment=None, platform=None,
-            start_date=None, end_date=None, offset=0, limit=10,
+            keyword="nonexistent",
+            sentiment=None,
+            platform=None,
+            start_date=None,
+            end_date=None,
+            offset=0,
+            limit=10,
         )
 
         assert results == []
         assert total == 0
 
-    def test_search_posts_combined_filters(
-        self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    def test_search_posts_combined_filters(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [
             _make_gold_post(
@@ -436,10 +456,13 @@ class TestDuckDBGoldPostSearchRepository:
         repo.save_batch(posts)
 
         results, total = repo.search_posts(
-            keyword=None, sentiment="positive", platform="twitter",
+            keyword=None,
+            sentiment="positive",
+            platform="twitter",
             start_date=datetime(2025, 1, 1, 0, 0, 0),
             end_date=datetime(2025, 1, 31, 23, 59, 59),
-            offset=0, limit=10,
+            offset=0,
+            limit=10,
         )
 
         assert total == 1
