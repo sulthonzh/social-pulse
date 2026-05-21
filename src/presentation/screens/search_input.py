@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import date
+from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
 import streamlit as st
@@ -112,7 +112,7 @@ def render() -> None:
         # The date input can return different types depending on how many dates are selected
         start_date_input = st.date_input(
             "Date range",
-            value=(date(2025, 1, 1), date.today()),
+            value=(date.today() - timedelta(days=90), date.today()),
         )
         submitted = st.form_submit_button("Create Search Request")
 
