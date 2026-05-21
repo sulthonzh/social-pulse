@@ -35,6 +35,7 @@ def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
 def render() -> None:
     st.header("Cross-Campaign Comparison")
 
+    conn = None
     try:
         conn = _get_conn()
         campaigns = _get_campaigns(conn)
@@ -48,19 +49,21 @@ def render() -> None:
     selected_ids = render_multi_campaign_selector(campaigns, key="cross_campaign")
     if len(selected_ids) < _MIN_CAMPAIGNS_FOR_COMPARISON:
         st.warning("Select at least 2 campaigns to compare.")
-        conn.close()
+        if conn:
+            conn.close()
         return
 
     from src.application.use_cases.get_cross_campaign import GetCrossCampaign  # noqa: PLC0415
 
     try:
-        use_case = GetCrossCampaign(conn)
+        use_case = GetCrossCampaign(conn)  # type: ignore[arg-type]
         result = use_case.execute(selected_ids)
     except Exception as exc:
         st.error(f"Failed to compare campaigns: {exc}")
         return
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
     if not result.campaigns:
         st.warning("No data found for selected campaigns.")

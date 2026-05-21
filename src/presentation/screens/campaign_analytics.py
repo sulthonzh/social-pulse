@@ -32,6 +32,7 @@ def _get_campaigns(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
 def render() -> None:
     st.header("Campaign Analytics")
 
+    conn = None
     try:
         conn = _get_conn()
         campaigns = _get_campaigns(conn)
@@ -44,7 +45,8 @@ def render() -> None:
 
     selected_id = render_campaign_selector(campaigns, key="campaign_analytics")
     if selected_id is None:
-        conn.close() if "conn" in dir() else None
+        if conn:
+            conn.close()
         return
 
     from src.application.use_cases.get_campaign_analytics import (  # noqa: PLC0415
@@ -52,13 +54,14 @@ def render() -> None:
     )
 
     try:
-        analytics_uc = GetCampaignAnalytics(conn)
+        analytics_uc = GetCampaignAnalytics(conn)  # type: ignore[arg-type]
         result = analytics_uc.execute(selected_id)
     except Exception as exc:
         st.error(f"Failed to load analytics: {exc}")
         return
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
     if result is None:
         st.warning("No analytics data found for this campaign.")
