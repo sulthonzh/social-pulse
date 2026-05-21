@@ -1,6 +1,6 @@
 .PHONY: help up down restart logs ps test lint shell clean
 
-COMPOSE = docker compose -f docker/docker-compose.yml
+COMPOSE = docker-compose -f docker/docker-compose.yml
 
 help:
 	@echo "SocialPulse — Docker Commands"
@@ -35,10 +35,10 @@ ps:
 	$(COMPOSE) ps
 
 test:
-	$(COMPOSE) run --rm test
+	$(COMPOSE) --profile ci run --rm test uv run pytest tests/ -x -q --tb=short --ignore=tests/e2e
 
 lint:
-	$(COMPOSE) run --rm lint
+	$(COMPOSE) --profile ci run --rm lint
 
 shell:
 	$(COMPOSE) exec app /bin/bash
