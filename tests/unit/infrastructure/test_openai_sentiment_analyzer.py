@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 from src.domain.value_objects.sentiment_label import SentimentLabel
-from src.infrastructure.ai.zai_sentiment_analyzer import (
-    ZAISentimentAnalyzer,
+from src.infrastructure.ai.openai_sentiment_analyzer import (
+    OpenAISentimentAnalyzer,
     _parse_response,
 )
 
@@ -51,17 +51,17 @@ class TestParseResponse:
         result = _parse_response({"label": "positive", "confidence": -0.3}, "glm-4.5-flash")
         assert result.confidence == 0.0
 
-    def test_model_name_includes_zai_prefix(self):
+    def test_model_name_includes_openai_prefix(self):
         result = _parse_response({"label": "positive", "confidence": 0.9}, "glm-4.5-flash")
-        assert result.model_name == "zai/glm-4.5-flash"
+        assert result.model_name == "openai/glm-4.5-flash"
         assert result.model_version == "glm-4.5-flash"
 
 
 @pytest.mark.unit
-class TestZAISentimentAnalyzer:
-    def _make_analyzer(self, return_value: dict[str, Any] | None) -> ZAISentimentAnalyzer:
+class TestOpenAISentimentAnalyzer:
+    def _make_analyzer(self, return_value: dict[str, Any] | None) -> OpenAISentimentAnalyzer:
         client = _MockClient(return_value)
-        return ZAISentimentAnalyzer(client=client)
+        return OpenAISentimentAnalyzer(client=client)
 
     def test_empty_string_returns_neutral(self):
         analyzer = self._make_analyzer({"label": "positive", "confidence": 0.9})
@@ -96,5 +96,5 @@ class TestZAISentimentAnalyzer:
     def test_result_contains_model_info(self):
         analyzer = self._make_analyzer({"label": "positive", "confidence": 0.9})
         result = _run(analyzer.analyze("great day"))
-        assert "zai/" in result.model_name
+        assert "openai/" in result.model_name
         assert result.model_version == "glm-4.5-flash"
