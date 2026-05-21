@@ -1,28 +1,61 @@
 from __future__ import annotations
 
-import asyncio
+import os
+import subprocess
+import time
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
+import httpx
 import streamlit as st
 
 from src.domain.exceptions import SocialPulseError
 from src.domain.value_objects.platform import Platform
-from src.infrastructure.crawling import create_crawler
-from src.infrastructure.persistence.duckdb_crawl_run_repository import (
-    DuckDBCrawlRunRepository,
-)
-from src.infrastructure.persistence.duckdb_post_repository import DuckDBPostRepository
-from src.infrastructure.persistence.duckdb_search_request_repository import (
-    DuckDBSearchRequestRepository,
-)
 from src.shared.config import get_db_connection
 
 if TYPE_CHECKING:
     import duckdb
 
+# In Docker, services talk via service names; locally it's localhost
+_API_BASE = "http://api:8000" if os.path.exists("/.dockerenv") else "http://localhost:8000"
 _MAX_KEYWORD_LENGTH = 200
 _MAX_DATE_RANGE_DAYS = 365
+
+
+def _api_available() -> bool:
+    """Check if the pipeline API is reachable."""
+    try:
+        httpx.get(f"{_API_BASE}/api/health", timeout=2.0)
+        return True
+    except httpx.ConnectError:
+        return False
+
+
+def _ensure_api_server() -> bool:
+    """Check if the pipeline API is reachable.
+
+    NOT cached — API availability changes over time (container restarts, etc).
+    Called only on form submission, so the overhead of a health-check GET is negligible.
+    """
+    if _api_available():
+        return True
+
+    # In Docker the api service should be running separately — no auto-start
+    if os.path.exists("/.dockerenv"):
+        return False
+
+    # Local dev: spawn uvicorn as subprocess
+    subprocess.Popen(
+        ["uv", "run", "python", "-m", "src.api.app"],  # noqa: S607
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    for _ in range(20):
+        if _api_available():
+            return True
+        time.sleep(0.5)
+    return False
 
 
 def _get_conn() -> duckdb.DuckDBPyConnection:
@@ -82,48 +115,36 @@ def _handle_submission(
         elif (end_date - start_date).days > _MAX_DATE_RANGE_DAYS:
             st.error(f"Date range must be {_MAX_DATE_RANGE_DAYS} days or less.")
         else:
-            from src.application.use_cases.ingest_crawl import (  # noqa: PLC0415
-                IngestCrawlRun,
-            )
-            from src.application.use_cases.search_posts import (  # noqa: PLC0415
-                SearchPosts,
-            )
+            if not _ensure_api_server():
+                st.error("Pipeline API server failed to start.")
+                return
 
-            conn = _get_conn()
+            api_url = f"{_API_BASE}/api/pipeline/start"
+
             try:
-                search_request_repo = DuckDBSearchRequestRepository(conn)
-                crawl_run_repo = DuckDBCrawlRunRepository(conn)
-                post_repo = DuckDBPostRepository(conn)
+                response = httpx.post(
+                    api_url,
+                    json={
+                        "keyword": keyword.strip(),
+                        "platform": platform.value,
+                        "start_date": str(start_date),
+                        "end_date": str(end_date),
+                    },
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                run_id = response.json()["run_id"]
 
-                create_use_case = SearchPosts(search_request_repo)
-                request = asyncio.run(
-                    create_use_case.execute(
-                        keyword=keyword.strip(),
-                        platform=platform,
-                        start_date=start_date,
-                        end_date=end_date,
-                    )
+                from src.presentation.components.pipeline_progress import (  # noqa: PLC0415
+                    render_pipeline_progress,
                 )
 
-                crawler = create_crawler()
-                ingest_use_case = IngestCrawlRun(
-                    search_request_repo=search_request_repo,
-                    crawl_run_repo=crawl_run_repo,
-                    post_repo=post_repo,
-                )
-                crawl_result = asyncio.run(
-                    ingest_use_case.execute(request, crawler)
-                )
-                st.success(
-                    f"Crawled **{request.keyword}** on {request.platform.value} "
-                    f"— {crawl_result.posts_fetched} posts found ({request.id})"
-                )
-            except Exception as crawl_exc:
-                st.warning(
-                    f"Search created but crawling failed: {crawl_exc}"
-                )
-            finally:
-                conn.close()
+                render_pipeline_progress(run_id)
+
+            except httpx.HTTPStatusError as exc:
+                st.error(f"Pipeline API error: {exc.response.status_code}")
+            except Exception as exc:
+                st.error(f"Failed to start pipeline: {exc}")
     except SocialPulseError as exc:
         st.error(f"Failed to create request: {exc}")
 
