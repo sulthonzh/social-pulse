@@ -4,8 +4,6 @@ from datetime import date, datetime
 from uuid import uuid4
 
 import pytest
-
-from src.application.use_cases.get_campaign_analytics import CampaignAnalytics
 from src.application.use_cases.get_cross_campaign import (
     CrossCampaignComparison,
     GetCrossCampaign,
@@ -91,7 +89,6 @@ def _seed_campaign_with_summary(db_with_schema, sr_id, keyword, **overrides):
 
 @pytest.mark.unit
 class TestGetCrossCampaignComparison:
-
     def test_returns_empty_when_no_ids_provided(self, db_with_schema):
         uc = GetCrossCampaign(db_with_schema)
         result = uc.execute([])
@@ -110,14 +107,28 @@ class TestGetCrossCampaignComparison:
         sr1 = uuid4()
         sr2 = uuid4()
         _seed_campaign_with_summary(
-            db_with_schema, sr1, "python",
-            positive_pct=60.0, negative_pct=20.0, neutral_pct=20.0,
-            total_likes=1000, total_shares=300, total_replies=200, total_views=50000,
+            db_with_schema,
+            sr1,
+            "python",
+            positive_pct=60.0,
+            negative_pct=20.0,
+            neutral_pct=20.0,
+            total_likes=1000,
+            total_shares=300,
+            total_replies=200,
+            total_views=50000,
         )
         _seed_campaign_with_summary(
-            db_with_schema, sr2, "java",
-            positive_pct=40.0, negative_pct=40.0, neutral_pct=20.0,
-            total_likes=500, total_shares=100, total_replies=50, total_views=20000,
+            db_with_schema,
+            sr2,
+            "java",
+            positive_pct=40.0,
+            negative_pct=40.0,
+            neutral_pct=20.0,
+            total_likes=500,
+            total_shares=100,
+            total_replies=50,
+            total_views=20000,
         )
 
         uc = GetCrossCampaign(db_with_schema)
@@ -132,12 +143,20 @@ class TestGetCrossCampaignComparison:
         sr1 = uuid4()
         sr2 = uuid4()
         _seed_campaign_with_summary(
-            db_with_schema, sr1, "python",
-            positive_pct=60.0, negative_pct=20.0, neutral_pct=20.0,
+            db_with_schema,
+            sr1,
+            "python",
+            positive_pct=60.0,
+            negative_pct=20.0,
+            neutral_pct=20.0,
         )
         _seed_campaign_with_summary(
-            db_with_schema, sr2, "java",
-            positive_pct=40.0, negative_pct=40.0, neutral_pct=20.0,
+            db_with_schema,
+            sr2,
+            "java",
+            positive_pct=40.0,
+            negative_pct=40.0,
+            neutral_pct=20.0,
         )
 
         uc = GetCrossCampaign(db_with_schema)
@@ -152,12 +171,22 @@ class TestGetCrossCampaignComparison:
         sr1 = uuid4()
         sr2 = uuid4()
         _seed_campaign_with_summary(
-            db_with_schema, sr1, "python",
-            total_likes=1000, total_shares=300, total_replies=200, total_views=50000,
+            db_with_schema,
+            sr1,
+            "python",
+            total_likes=1000,
+            total_shares=300,
+            total_replies=200,
+            total_views=50000,
         )
         _seed_campaign_with_summary(
-            db_with_schema, sr2, "java",
-            total_likes=500, total_shares=100, total_replies=50, total_views=20000,
+            db_with_schema,
+            sr2,
+            "java",
+            total_likes=500,
+            total_shares=100,
+            total_replies=50,
+            total_views=20000,
         )
 
         uc = GetCrossCampaign(db_with_schema)

@@ -22,7 +22,6 @@ def _make_daily(**overrides: object) -> GoldCampaignDaily:
 
 @pytest.mark.unit
 class TestGoldCampaignDailyDefaults:
-
     def test_id_auto_generated(self) -> None:
         daily = _make_daily()
         assert isinstance(daily.id, UUID)
@@ -82,7 +81,6 @@ class TestGoldCampaignDailyDefaults:
 
 @pytest.mark.unit
 class TestGoldCampaignDailyExplicitValues:
-
     def test_explicit_date(self) -> None:
         d = date(2025, 3, 20)
         daily = _make_daily(date=d)
@@ -121,7 +119,6 @@ class TestGoldCampaignDailyExplicitValues:
 
 @pytest.mark.unit
 class TestGoldCampaignDailyRequiredFields:
-
     def test_search_request_id_is_required(self) -> None:
         payload: dict[str, object] = {
             "keyword": "test",
@@ -161,7 +158,6 @@ class TestGoldCampaignDailyRequiredFields:
 
 @pytest.mark.unit
 class TestGoldCampaignDailyImmutability:
-
     def test_frozen_model_raises_on_mutation(self) -> None:
         daily = _make_daily()
         with pytest.raises(PydanticValidationError):

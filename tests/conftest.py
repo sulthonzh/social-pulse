@@ -1,5 +1,5 @@
-import pytest
 import duckdb
+import pytest
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def db_connection():
 
 @pytest.fixture
 def db_with_schema(db_connection):
-    from src.infrastructure.persistence.migrations import create_all_tables
+    from src.infrastructure.persistence.migrations import create_all_tables  # noqa: PLC0415
 
     create_all_tables(db_connection)
     return db_connection

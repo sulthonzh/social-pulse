@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from uuid import uuid4
 
 import pytest
-
 from src.domain.entities.crawl_run import CrawlRun
 from src.domain.entities.search_request import SearchRequest
 from src.domain.value_objects.crawl_status import CrawlStatus
@@ -38,9 +37,9 @@ def _make_crawl_run(search_request_id, **overrides) -> CrawlRun:
         platform=overrides.get("platform", Platform.TWITTER),
         status=overrides.get("status", CrawlStatus.RUNNING),
         posts_fetched=overrides.get("posts_fetched", 0),
-        error_message=overrides.get("error_message", None),
+        error_message=overrides.get("error_message"),
         started_at=overrides.get("started_at", datetime(2025, 1, 1, 12, 0, 0)),
-        completed_at=overrides.get("completed_at", None),
+        completed_at=overrides.get("completed_at"),
     )
 
 
@@ -53,7 +52,6 @@ def _insert_search_request(db_with_schema) -> SearchRequest:
 
 @pytest.mark.unit
 class TestDuckDBCrawlRunRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema):
         sr = _insert_search_request(db_with_schema)
         repo = DuckDBCrawlRunRepository(db_with_schema)
@@ -86,9 +84,7 @@ class TestDuckDBCrawlRunRepository:
         results = repo.get_by_search_request(str(sr.id))
         assert len(results) == 2
 
-    def test_get_by_search_request_returns_empty_for_nonexistent(
-        self, db_with_schema
-    ):
+    def test_get_by_search_request_returns_empty_for_nonexistent(self, db_with_schema):
         repo = DuckDBCrawlRunRepository(db_with_schema)
         results = repo.get_by_search_request(str(uuid4()))
         assert results == []
@@ -99,9 +95,7 @@ class TestDuckDBCrawlRunRepository:
 
         base = datetime(2025, 1, 1, 12, 0, 0)
         cr_earlier = _make_crawl_run(sr.id, started_at=base)
-        cr_later = _make_crawl_run(
-            sr.id, started_at=base + timedelta(hours=3)
-        )
+        cr_later = _make_crawl_run(sr.id, started_at=base + timedelta(hours=3))
         repo.save(cr_earlier)
         repo.save(cr_later)
 

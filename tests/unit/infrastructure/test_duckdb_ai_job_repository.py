@@ -58,7 +58,6 @@ def _make_ai_job(silver_post_id, **overrides) -> AIJob:
 
 @pytest.mark.unit
 class TestDuckDBAIJobRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema):
         post = _insert_silver_post(db_with_schema)
         repo = DuckDBAIJobRepository(db_with_schema)

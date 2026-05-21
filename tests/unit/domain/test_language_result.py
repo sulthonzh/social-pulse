@@ -7,7 +7,6 @@ from src.domain.entities.language_result import LanguageResult
 
 @pytest.mark.unit
 class TestLanguageResultCreation:
-
     def test_basic_creation(self) -> None:
         result = LanguageResult(language_code="en", confidence=0.99)
         assert result.language_code == "en"
@@ -24,7 +23,6 @@ class TestLanguageResultCreation:
 
 @pytest.mark.unit
 class TestLanguageResultConfidenceBounds:
-
     def _make_result(self, confidence: float) -> LanguageResult:
         return LanguageResult(language_code="en", confidence=confidence)
 
@@ -59,7 +57,6 @@ class TestLanguageResultConfidenceBounds:
 
 @pytest.mark.unit
 class TestLanguageResultRequiredFields:
-
     def test_language_code_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             LanguageResult(confidence=0.9)  # type: ignore[call-arg]

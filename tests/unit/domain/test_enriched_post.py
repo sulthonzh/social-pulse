@@ -12,7 +12,6 @@ from src.domain.value_objects.platform import Platform
 
 @pytest.mark.unit
 class TestEnrichedPostDefaults:
-
     def _make_post(self, **overrides: Any) -> EnrichedPost:
         defaults: dict[str, Any] = {
             "bronze_post_id": uuid4(),
@@ -80,7 +79,6 @@ class TestEnrichedPostDefaults:
 
 @pytest.mark.unit
 class TestEnrichedPostExplicitValues:
-
     def _make_post(self, **overrides: Any) -> EnrichedPost:
         defaults: dict[str, Any] = {
             "bronze_post_id": uuid4(),
@@ -134,7 +132,6 @@ class TestEnrichedPostExplicitValues:
 
 @pytest.mark.unit
 class TestEnrichedPostRequiredFields:
-
     def test_bronze_post_id_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             EnrichedPost(  # type: ignore[call-arg]
@@ -159,7 +156,6 @@ class TestEnrichedPostRequiredFields:
 
 @pytest.mark.unit
 class TestEnrichedPostAllPlatforms:
-
     def test_twitter_platform(self) -> None:
         post = EnrichedPost(
             bronze_post_id=uuid4(),

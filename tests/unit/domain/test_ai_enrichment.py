@@ -12,7 +12,6 @@ from src.domain.value_objects.sentiment_label import SentimentLabel
 
 @pytest.mark.unit
 class TestAIEnrichmentDefaults:
-
     def _make_enrichment(self, **overrides: Any) -> AIEnrichment:
         defaults: dict[str, Any] = {
             "silver_post_id": uuid4(),
@@ -82,7 +81,6 @@ class TestAIEnrichmentDefaults:
 
 @pytest.mark.unit
 class TestAIEnrichmentExplicitValues:
-
     def _make_enrichment(self, **overrides: Any) -> AIEnrichment:
         defaults: dict[str, Any] = {
             "silver_post_id": uuid4(),
@@ -150,7 +148,6 @@ class TestAIEnrichmentExplicitValues:
 
 @pytest.mark.unit
 class TestAIEnrichmentRequiredFields:
-
     def test_silver_post_id_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             AIEnrichment()  # type: ignore[call-arg]

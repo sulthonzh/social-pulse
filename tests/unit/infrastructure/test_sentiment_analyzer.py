@@ -40,7 +40,6 @@ class TestMapLabel:
 
 @pytest.mark.unit
 class TestTransformerSentimentAnalyzer:
-
     def _make_analyzer(self, pipeline_return):
         def mock_pipeline(text, **kwargs):
             return pipeline_return

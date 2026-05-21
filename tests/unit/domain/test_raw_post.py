@@ -11,7 +11,6 @@ from src.domain.value_objects.platform import Platform
 
 @pytest.mark.unit
 class TestRawPostDefaults:
-
     def _make_raw_post(self, **overrides: Any) -> RawPost:
         defaults: dict[str, Any] = {
             "search_request_id": uuid4(),
@@ -47,7 +46,6 @@ class TestRawPostDefaults:
 
 @pytest.mark.unit
 class TestRawPostExplicitValues:
-
     def _make_raw_post(self, **overrides: Any) -> RawPost:
         defaults: dict[str, Any] = {
             "search_request_id": uuid4(),
@@ -79,7 +77,6 @@ class TestRawPostExplicitValues:
 
 @pytest.mark.unit
 class TestRawPostAllPlatforms:
-
     def _make_raw_post(self, platform: Platform) -> RawPost:
         return RawPost(
             search_request_id=uuid4(),

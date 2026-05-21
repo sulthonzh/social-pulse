@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
-
 from src.domain.entities.crawl_run import CrawlRun
 from src.domain.entities.raw_post import RawPost
 from src.domain.entities.search_request import SearchRequest
@@ -56,9 +55,7 @@ def _insert_prerequisites(db_with_schema):
     return sr, cr
 
 
-def _make_post(
-    search_request_id, crawl_run_id, *, platform_id=None, fetched_at=None
-):
+def _make_post(search_request_id, crawl_run_id, *, platform_id=None, fetched_at=None):
     return RawPost(
         id=uuid4(),
         search_request_id=search_request_id,
@@ -73,7 +70,6 @@ def _make_post(
 
 @pytest.mark.unit
 class TestDuckDBPostRepository:
-
     def test_save_posts_empty_list_returns_zero(self, db_with_schema):
         repo = DuckDBPostRepository(db_with_schema)
         assert repo.save_posts([]) == 0
@@ -168,9 +164,7 @@ class TestDuckDBPostRepository:
         repo = DuckDBPostRepository(db_with_schema)
 
         base_time = datetime(2025, 1, 15, 10, 0, 0)
-        post_earlier = _make_post(
-            sr.id, cr.id, fetched_at=base_time, platform_id="old"
-        )
+        post_earlier = _make_post(sr.id, cr.id, fetched_at=base_time, platform_id="old")
         post_later = _make_post(
             sr.id,
             cr.id,

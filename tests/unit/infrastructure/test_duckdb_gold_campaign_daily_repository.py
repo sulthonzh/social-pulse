@@ -42,7 +42,6 @@ def _make_daily(**overrides: object) -> GoldCampaignDaily:
 
 @pytest.mark.unit
 class TestDuckDBGoldCampaignDailyRepository:
-
     def test_save_batch_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         records = [_make_daily() for _ in range(3)]
@@ -59,19 +58,20 @@ class TestDuckDBGoldCampaignDailyRepository:
         assert repo.save_batch([record]) == 1
         assert repo.save_batch([record]) == 0
 
-    def test_get_by_search_request_returns_matching(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_matching(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         sr_id = uuid4()
-        records = [
-            _make_daily(search_request_id=sr_id, date=date(2025, 1, i))
-            for i in range(1, 4)
-        ]
+        records = [_make_daily(search_request_id=sr_id, date=date(2025, 1, i)) for i in range(1, 4)]
         repo.save_batch(records)
 
         results = repo.get_by_search_request(str(sr_id))
         assert len(results) == 3
 
-    def test_get_by_search_request_ordered_by_date_asc(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_ordered_by_date_asc(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         sr_id = uuid4()
         records = [
@@ -85,7 +85,9 @@ class TestDuckDBGoldCampaignDailyRepository:
         assert results[0].date == date(2025, 1, 10)
         assert results[1].date == date(2025, 1, 20)
 
-    def test_get_by_search_request_returns_empty_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_empty_for_nonexistent(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) == []
 

@@ -12,7 +12,6 @@ from src.domain.exceptions import (
 
 @pytest.mark.unit
 class TestSocialPulseErrorBase:
-
     def test_is_exception(self) -> None:
         assert issubclass(SocialPulseError, Exception)
 
@@ -27,7 +26,6 @@ class TestSocialPulseErrorBase:
 
 @pytest.mark.unit
 class TestSubclassInheritance:
-
     def test_entity_not_found_is_social_pulse_error(self) -> None:
         assert issubclass(EntityNotFoundError, SocialPulseError)
         assert issubclass(EntityNotFoundError, Exception)
@@ -47,7 +45,6 @@ class TestSubclassInheritance:
 
 @pytest.mark.unit
 class TestSubclassRaiseAndCatch:
-
     def test_entity_not_found_caught_as_base(self) -> None:
         with pytest.raises(SocialPulseError):
             raise EntityNotFoundError("entity xyz not found")
@@ -83,7 +80,6 @@ class TestSubclassRaiseAndCatch:
 
 @pytest.mark.unit
 class TestErrorMessagePropagation:
-
     def test_entity_not_found_message(self) -> None:
         err = EntityNotFoundError("user 42")
         assert "user 42" in str(err)

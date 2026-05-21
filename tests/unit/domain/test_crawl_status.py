@@ -6,7 +6,6 @@ from src.domain.value_objects.crawl_status import CrawlStatus
 
 @pytest.mark.unit
 class TestCrawlStatusEnumValues:
-
     def test_pending_exists(self) -> None:
         assert CrawlStatus.PENDING is not None
 
@@ -34,7 +33,6 @@ class TestCrawlStatusEnumValues:
 
 @pytest.mark.unit
 class TestCrawlStatusStrEnumBehavior:
-
     def test_status_is_string(self) -> None:
         assert isinstance(CrawlStatus.RUNNING, str)
 

@@ -45,7 +45,6 @@ def _make_gold_post(**overrides: object) -> GoldPostSearch:
 
 @pytest.mark.unit
 class TestDuckDBGoldPostSearchRepository:
-
     def test_save_batch_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post() for _ in range(3)]
@@ -62,7 +61,9 @@ class TestDuckDBGoldPostSearchRepository:
         assert repo.save_batch([post]) == 1
         assert repo.save_batch([post]) == 0
 
-    def test_get_by_keyword_returns_matching_results(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_keyword_returns_matching_results(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         sr_id = uuid4()
         posts = [_make_gold_post(keyword="python", search_request_id=sr_id) for _ in range(3)]
@@ -72,17 +73,23 @@ class TestDuckDBGoldPostSearchRepository:
         results = repo.get_by_keyword("python")
         assert len(results) == 3
 
-    def test_get_by_keyword_returns_empty_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_keyword_returns_empty_for_nonexistent(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.get_by_keyword("nonexistent") == []
 
-    def test_count_by_keyword_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_count_by_keyword_returns_correct_count(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         posts = [_make_gold_post(keyword="python") for _ in range(5)]
         repo.save_batch(posts)
         assert repo.count_by_keyword("python") == 5
 
-    def test_count_by_keyword_returns_zero_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_count_by_keyword_returns_zero_for_nonexistent(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.count_by_keyword("nonexistent") == 0
 
@@ -137,7 +144,9 @@ class TestDuckDBGoldPostSearchRepository:
         assert len(results) == 1
         assert results[0].language == "en"
 
-    def test_get_by_search_request_returns_matching(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_matching(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         sr_id = uuid4()
         posts = [_make_gold_post(search_request_id=sr_id) for _ in range(3)]
@@ -146,7 +155,9 @@ class TestDuckDBGoldPostSearchRepository:
         results = repo.get_by_search_request(str(sr_id))
         assert len(results) == 3
 
-    def test_get_by_search_request_returns_empty_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_empty_for_nonexistent(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldPostSearchRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) == []
 

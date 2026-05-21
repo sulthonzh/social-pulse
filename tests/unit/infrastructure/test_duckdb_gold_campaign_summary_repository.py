@@ -43,14 +43,15 @@ def _make_summary(**overrides: object) -> GoldCampaignSummary:
 
 @pytest.mark.unit
 class TestDuckDBGoldCampaignSummaryRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema: duckdb.DuckDBPyConnection):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         result = repo.save(summary)
         assert result.id == summary.id
 
-    def test_get_by_search_request_returns_saved_entity(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_saved_entity(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         repo.save(summary)
@@ -59,7 +60,9 @@ class TestDuckDBGoldCampaignSummaryRepository:
         assert found is not None
         assert found.id == summary.id
 
-    def test_get_by_search_request_returns_none_for_nonexistent(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_by_search_request_returns_none_for_nonexistent(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) is None
 
@@ -72,7 +75,9 @@ class TestDuckDBGoldCampaignSummaryRepository:
         results = repo.get_all_summaries()
         assert len(results) == 3
 
-    def test_save_upserts_on_same_search_request_id(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_save_upserts_on_same_search_request_id(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ):
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         sr_id = uuid4()
         original = _make_summary(search_request_id=sr_id, total_posts=50)

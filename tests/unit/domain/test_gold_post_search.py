@@ -21,7 +21,6 @@ def _make_post(**overrides: object) -> GoldPostSearch:
 
 @pytest.mark.unit
 class TestGoldPostSearchDefaults:
-
     def test_id_auto_generated(self) -> None:
         post = _make_post()
         assert isinstance(post.id, UUID)
@@ -97,7 +96,6 @@ class TestGoldPostSearchDefaults:
 
 @pytest.mark.unit
 class TestGoldPostSearchExplicitValues:
-
     def test_explicit_keyword(self) -> None:
         post = _make_post(keyword="data engineering")
         assert post.keyword == "data engineering"
@@ -150,7 +148,6 @@ class TestGoldPostSearchExplicitValues:
 
 @pytest.mark.unit
 class TestGoldPostSearchRequiredFields:
-
     def test_search_request_id_is_required(self) -> None:
         payload: dict[str, object] = {"keyword": "test", "platform": Platform.TWITTER}
         with pytest.raises(PydanticValidationError):
@@ -169,7 +166,6 @@ class TestGoldPostSearchRequiredFields:
 
 @pytest.mark.unit
 class TestGoldPostSearchImmutability:
-
     def test_frozen_model_raises_on_mutation(self) -> None:
         post = _make_post()
         with pytest.raises(PydanticValidationError):

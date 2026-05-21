@@ -6,7 +6,6 @@ from src.domain.value_objects.platform import Platform
 
 @pytest.mark.unit
 class TestPlatformEnumValues:
-
     def test_twitter_exists(self) -> None:
         assert Platform.TWITTER is not None
 
@@ -28,7 +27,6 @@ class TestPlatformEnumValues:
 
 @pytest.mark.unit
 class TestPlatformStrEnumBehavior:
-
     def test_platform_is_string(self) -> None:
         assert isinstance(Platform.TWITTER, str)
 
