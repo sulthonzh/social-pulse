@@ -70,8 +70,8 @@ class GetCampaignAnalytics:
             total_shares=int(row[9] or 0),
             total_replies=int(row[10] or 0),
             total_views=int(row[11] or 0),
-            top_hashtags=self._unnest_top(row[12]),
-            top_topics=self._unnest_top(row[13]),
+            top_hashtags=self._unnest_top(row[12], "hashtag"),
+            top_topics=self._unnest_top(row[13], "topic"),
             sentiment_distribution=self._get_sentiment_distribution(search_request_id),
             daily_volume=self._get_daily_volume(search_request_id),
         )
@@ -187,10 +187,10 @@ class GetCampaignAnalytics:
         return [{"topic": str(r[0]), "count": int(r[1])} for r in rows]
 
     @staticmethod
-    def _unnest_top(arr: object) -> list[dict[str, object]]:
+    def _unnest_top(arr: object, key: str = "value") -> list[dict[str, object]]:
         if arr is None:
             return []
         if not isinstance(arr, Sequence) or isinstance(arr, str):
             return []
         items = cast("Sequence[object]", arr)
-        return [{"value": str(v), "count": 0} for v in items]
+        return [{key: str(v), "count": 0} for v in items]
