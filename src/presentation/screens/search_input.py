@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import date
+from typing import Any, Dict, List
 
 import duckdb
 import streamlit as st
@@ -17,7 +18,7 @@ def _get_conn() -> duckdb.DuckDBPyConnection:
     return get_db_connection()
 
 
-def _get_recent_requests(conn: duckdb.DuckDBPyConnection) -> list[dict]:
+def _get_recent_requests(conn: duckdb.DuckDBPyConnection) -> List[Dict[str, Any]]:
     rows = conn.execute(
         """
         SELECT id, keyword, platform, start_date, end_date,
@@ -49,7 +50,9 @@ def render() -> None:
     with st.form("search_form"):
         keyword = st.text_input("Keyword", placeholder="e.g. data engineering")
         platform_choice = st.selectbox("Platform", ["twitter", "facebook", "instagram"])
-        start, end = st.date_input(
+        
+        # The date input can return different types depending on how many dates are selected
+        start_date_input = st.date_input(
             "Date range",
             value=(date(2025, 1, 1), date.today()),
         )
@@ -61,18 +64,22 @@ def render() -> None:
             else:
                 try:
                     platform = Platform(platform_choice)
-                    if isinstance(start, tuple):
-                        start_date, end_date = start
+                    
+                    # Handle date input return type - Streamlit date input always returns a tuple
+                    # even if only one date is selected, so we handle it directly with safety checks
+                    if len(start_date_input) == 0:
+                        start_date = date(2025, 1, 1)  # Default start date
+                        end_date = date.today()  # Default end date
                     else:
-                        start_date = start
-                        end_date = end
+                        start_date = start_date_input[0]
+                        end_date = start_date_input[1] if len(start_date_input) > 1 else date.today()
 
                     from src.application.use_cases.search_posts import SearchPosts  # noqa: PLC0415
 
                     conn = _get_conn()
                     repo = DuckDBSearchRequestRepository(conn)
                     use_case = SearchPosts(repo)
-                    result = asyncio.get_event_loop().run_until_complete(
+                    result = asyncio.run(
                         use_case.execute(
                             keyword=keyword.strip(),
                             platform=platform,
