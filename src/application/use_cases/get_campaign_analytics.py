@@ -70,8 +70,8 @@ class GetCampaignAnalytics:
             total_shares=int(row[9] or 0),
             total_replies=int(row[10] or 0),
             total_views=int(row[11] or 0),
-            top_hashtags=self._unnest_top(row[12], "hashtag"),
-            top_topics=self._unnest_top(row[13], "topic"),
+            top_hashtags=self._get_top_hashtags_from_posts(search_request_id),
+            top_topics=self._get_top_topics_from_posts(search_request_id),
             sentiment_distribution=self._get_sentiment_distribution(search_request_id),
             daily_volume=self._get_daily_volume(search_request_id),
         )
