@@ -4,8 +4,8 @@ import asyncio
 from typing import Any
 
 import pytest
-from src.infrastructure.ai.zai_language_detector import (
-    ZAILanguageDetector,
+from src.infrastructure.ai.openai_language_detector import (
+    OpenAILanguageDetector,
     _parse_response,
 )
 
@@ -50,17 +50,17 @@ class TestParseResponse:
         result = _parse_response({"language_code": "en", "confidence": -0.1}, "glm-4.5-flash")
         assert result.confidence == 0.0
 
-    def test_model_name_includes_zai_prefix(self):
+    def test_model_name_includes_openai_prefix(self):
         result = _parse_response({"language_code": "en", "confidence": 0.9}, "glm-4.5-flash")
-        assert result.model_name == "zai/glm-4.5-flash"
+        assert result.model_name == "openai/glm-4.5-flash"
         assert result.model_version == "glm-4.5-flash"
 
 
 @pytest.mark.unit
-class TestZAILanguageDetector:
-    def _make_detector(self, return_value: dict[str, Any] | None) -> ZAILanguageDetector:
+class TestOpenAILanguageDetector:
+    def _make_detector(self, return_value: dict[str, Any] | None) -> OpenAILanguageDetector:
         client = _MockClient(return_value)
-        return ZAILanguageDetector(client=client)
+        return OpenAILanguageDetector(client=client)
 
     def test_empty_string_returns_unknown(self):
         detector = self._make_detector({"language_code": "en", "confidence": 0.9})
@@ -92,5 +92,5 @@ class TestZAILanguageDetector:
     def test_result_contains_model_info(self):
         detector = self._make_detector({"language_code": "fr", "confidence": 0.9})
         result = _run(detector.detect("Bonjour le monde"))
-        assert "zai/" in result.model_name
+        assert "openai/" in result.model_name
         assert result.model_version == "glm-4.5-flash"
