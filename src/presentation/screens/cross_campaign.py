@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from src.domain.exceptions import SocialPulseError
 from src.presentation.components.charts import (
     render_comparison_chart,
     render_engagement_chart,
@@ -50,7 +51,7 @@ def render() -> None:
     try:
         use_case = GetCrossCampaign(conn)  # type: ignore[arg-type]
         result = use_case.execute(selected_ids)
-    except Exception as exc:
+    except SocialPulseError as exc:
         st.error(f"Failed to compare campaigns: {exc}")
         return
     finally:

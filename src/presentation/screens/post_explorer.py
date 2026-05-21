@@ -4,6 +4,7 @@ from typing import Any
 
 import streamlit as st
 
+from src.domain.exceptions import SocialPulseError
 from src.presentation.components.filters import (
     render_date_range_filter,
     render_keyword_filter,
@@ -54,7 +55,7 @@ def render() -> None:
         posts: list[dict[str, Any]] = result.posts
         total: int = result.total
         conn.close()
-    except Exception as exc:
+    except SocialPulseError as exc:
         st.warning(f"Could not load posts: {exc}")
         return
 
