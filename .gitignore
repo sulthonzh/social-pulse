@@ -48,3 +48,5 @@ data/*.csv
 
 # Documentation (local reference only, not versioned)
 docs/
+
+.playwright-mcp/
