@@ -1,9 +1,10 @@
 # ============================================================
 # SocialPulse — Multi-stage Dockerfile (uv-based)
 #
-# Targets: base, test, lint, runtime, worker, gold-builder
+# Targets: base, test, lint, runtime, worker, gold-builder, api
 # Usage:
 #   docker compose build app
+#   docker compose build api
 #   docker compose --profile ci run --rm test
 #   docker compose --profile ci run --rm lint
 #   docker compose --profile pipeline up -d
@@ -68,3 +69,10 @@ CMD ["uv", "run", "python", "-m", "src.infrastructure.crawling.worker"]
 FROM base AS gold-builder
 
 CMD ["uv", "run", "python", "-m", "src.infrastructure.gold.builder"]
+
+# ---- API Server (FastAPI SSE) — reuses runtime image ----
+FROM runtime AS api
+
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]

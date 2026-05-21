@@ -39,6 +39,11 @@ data/*.csv
 # Docker
 docker/
 
+# dbt generated artifacts
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
 # Documentation
 docs/
 
