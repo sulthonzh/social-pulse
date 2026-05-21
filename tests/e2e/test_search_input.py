@@ -19,9 +19,7 @@ def test_search_input_page_shows_form(page: Page) -> None:
     page.wait_for_selector('label:has-text("Keyword")', timeout=5000)
     page.wait_for_selector('label:has-text("Platform")', timeout=5000)
     page.wait_for_selector('label:has-text("Date range")', timeout=5000)
-    submit_btn = page.wait_for_selector(
-        'button:has-text("Create Search Request")', timeout=5000
-    )
+    submit_btn = page.wait_for_selector('button:has-text("Create Search Request")', timeout=5000)
     assert submit_btn is not None
 
 
@@ -55,6 +53,6 @@ def test_seeded_search_requests_are_listed(page: Page) -> None:
     navigate_to(page, "Search Input")
     page.wait_for_selector("h2:has-text('Search Input')", timeout=10000)
 
-    page.wait_for_selector('text=data engineering', timeout=10000)
-    page.wait_for_selector('text=machine learning', timeout=5000)
-    page.wait_for_selector('text=cloud computing', timeout=5000)
+    page.wait_for_selector("text=data engineering", timeout=10000)
+    page.wait_for_selector("text=machine learning", timeout=5000)
+    page.wait_for_selector("text=cloud computing", timeout=5000)
