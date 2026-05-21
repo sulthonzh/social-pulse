@@ -8,7 +8,7 @@ from src.domain.entities.sentiment_result import SentimentResult
 from src.domain.value_objects.sentiment_label import SentimentLabel
 
 if TYPE_CHECKING:
-    from src.infrastructure.ai.zai_client import ZAIClient
+    from src.infrastructure.ai.openai_client import OpenAIClient
 
 logger = structlog.get_logger()
 
@@ -23,7 +23,7 @@ _SYSTEM_PROMPT = (
 _UNKNOWN_RESULT = SentimentResult(
     label=SentimentLabel.NEUTRAL,
     confidence=0.0,
-    model_name="zai",
+    model_name="openai",
     model_version="unknown",
 )
 
@@ -42,13 +42,13 @@ def _parse_response(data: dict[str, object], model: str) -> SentimentResult:
     return SentimentResult(
         label=label,
         confidence=confidence,
-        model_name=f"zai/{model}",
+        model_name=f"openai/{model}",
         model_version=version,
     )
 
 
-class ZAISentimentAnalyzer:
-    def __init__(self, client: ZAIClient) -> None:
+class OpenAISentimentAnalyzer:
+    def __init__(self, client: OpenAIClient) -> None:
         self._client = client
 
     async def analyze(self, text: str) -> SentimentResult:
@@ -62,7 +62,7 @@ class ZAISentimentAnalyzer:
         )
 
         if not data:
-            logger.warning("zai_sentiment_empty_response")
+            logger.warning("openai_sentiment_empty_response")
             return _UNKNOWN_RESULT
 
         result = _parse_response(data, self._client._model)
