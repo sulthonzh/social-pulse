@@ -3,22 +3,40 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from src.domain.value_objects.platform import Platform
     from src.infrastructure.crawling.base import BaseCrawler
 
 
-def create_crawler() -> BaseCrawler:
-    """Create appropriate crawler based on configuration.
+def create_crawler(platform: Platform | None = None) -> BaseCrawler:
+    """Create appropriate crawler based on platform and configuration.
 
-    Returns SimulationCrawler (free, no API keys) when no Twitter bearer token
-    is configured. Falls back to TwitterCrawler when credentials are available.
+    Platform-aware factory:
+    - youtube -> YouTubeCrawler (yt-dlp, no auth)
+    - reddit  -> RedditCrawler (public JSON API, no auth)
+    - twitter -> TwitterCrawler if bearer token set, else SimulationCrawler
+    - None    -> SimulationCrawler (generic fallback)
     """
-    from src.shared.config import settings  # noqa: PLC0415
+    if platform is not None:
+        platform_value = platform.value if hasattr(platform, "value") else str(platform)
 
-    if settings.twitter_bearer_token:
-        from src.infrastructure.crawling.twitter_crawler import TwitterCrawler  # noqa: PLC0415
+        if platform_value == "youtube":
+            from src.infrastructure.crawling.youtube_crawler import YouTubeCrawler
 
-        return TwitterCrawler()
+            return YouTubeCrawler()
 
-    from src.infrastructure.crawling.simulation_crawler import SimulationCrawler  # noqa: PLC0415
+        if platform_value == "reddit":
+            from src.infrastructure.crawling.reddit_crawler import RedditCrawler
+
+            return RedditCrawler()
+
+        if platform_value == "twitter":
+            from src.shared.config import settings
+
+            if settings.twitter_bearer_token:
+                from src.infrastructure.crawling.twitter_crawler import TwitterCrawler
+
+                return TwitterCrawler()
+
+    from src.infrastructure.crawling.simulation_crawler import SimulationCrawler
 
     return SimulationCrawler()
