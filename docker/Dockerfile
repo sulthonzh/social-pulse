@@ -59,6 +59,11 @@ FROM base AS worker
 
 CMD ["uv", "run", "python", "-m", "src.infrastructure.ai.worker"]
 
+# ---- Crawl Worker ----
+FROM base AS crawl-worker
+
+CMD ["uv", "run", "python", "-m", "src.infrastructure.crawling.worker"]
+
 # ---- Gold Builder ----
 FROM base AS gold-builder
 
