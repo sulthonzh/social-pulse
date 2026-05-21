@@ -159,8 +159,9 @@ def seed(conn: Any) -> dict[str, int]:
             payload = {
                 "id": post_id[:15],
                 "text": text,
-                "created_at": posted_at.isoformat(),
+                "posted_at": posted_at.isoformat(),
                 "author_id": author["handle"].replace("@", "") + str(random.randint(1, 999)),  # noqa: S311
+                "author_name": author["name"],
                 "public_metrics": {
                     "like_count": like_count,
                     "retweet_count": share_count,
