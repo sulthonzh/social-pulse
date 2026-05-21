@@ -34,6 +34,8 @@ FROM base AS test
 
 COPY tests/ tests/
 
+RUN uv run playwright install chromium --with-deps
+
 CMD ["uv", "run", "pytest", "--tb=short", "-v"]
 
 # ---- Lint ----
