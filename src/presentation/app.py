@@ -26,7 +26,7 @@ def main() -> None:
     bootstrap.run(__file__, False, [], {})
 
 
-st.set_page_config(page_title="SocialPulse", layout="wide", page_icon="📊")
+st.set_page_config(page_title="SocialPulse", layout="wide")
 
 page = st.sidebar.selectbox(
     "Navigate",

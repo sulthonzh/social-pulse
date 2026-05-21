@@ -102,14 +102,14 @@ def render() -> None:
         st.info("No search requests yet. Create one above.")
     else:
         for req in requests:
-            status_emoji = {
-                "completed": "✅",
-                "running": "⏳",
-                "pending": "📝",
-                "failed": "❌",
-            }.get(req["status"], "❓")
+            status_label = {
+                "completed": "Completed",
+                "running": "Running",
+                "pending": "Pending",
+                "failed": "Failed",
+            }.get(req["status"], "Unknown")
             st.markdown(
-                f"{status_emoji} **{req['keyword']}** — {req['platform']} — "
-                f"{req['start_date']} to {req['end_date']} — "
-                f"{req['posts_found']} posts — _{req['status']}_"
+                f"**{req['keyword']}** | {req['platform']} | "
+                f"{req['start_date']} to {req['end_date']} | "
+                f"{req['posts_found']} posts | {status_label}"
             )
