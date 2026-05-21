@@ -8,6 +8,11 @@ import streamlit as st
 
 from src.domain.exceptions import SocialPulseError
 from src.domain.value_objects.platform import Platform
+from src.infrastructure.crawling import create_crawler
+from src.infrastructure.persistence.duckdb_crawl_run_repository import (
+    DuckDBCrawlRunRepository,
+)
+from src.infrastructure.persistence.duckdb_post_repository import DuckDBPostRepository
 from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
 )
@@ -77,26 +82,48 @@ def _handle_submission(
         elif (end_date - start_date).days > _MAX_DATE_RANGE_DAYS:
             st.error(f"Date range must be {_MAX_DATE_RANGE_DAYS} days or less.")
         else:
+            from src.application.use_cases.ingest_crawl import (  # noqa: PLC0415
+                IngestCrawlRun,
+            )
             from src.application.use_cases.search_posts import (  # noqa: PLC0415
                 SearchPosts,
             )
 
             conn = _get_conn()
-            repo = DuckDBSearchRequestRepository(conn)
-            use_case = SearchPosts(repo)
-            result = asyncio.run(
-                use_case.execute(
-                    keyword=keyword.strip(),
-                    platform=platform,
-                    start_date=start_date,
-                    end_date=end_date,
+            try:
+                search_request_repo = DuckDBSearchRequestRepository(conn)
+                crawl_run_repo = DuckDBCrawlRunRepository(conn)
+                post_repo = DuckDBPostRepository(conn)
+
+                create_use_case = SearchPosts(search_request_repo)
+                request = asyncio.run(
+                    create_use_case.execute(
+                        keyword=keyword.strip(),
+                        platform=platform,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
                 )
-            )
-            conn.close()
-            st.success(
-                f"Search request created: **{result.keyword}** "
-                f"on {result.platform.value} ({result.id})"
-            )
+
+                crawler = create_crawler()
+                ingest_use_case = IngestCrawlRun(
+                    search_request_repo=search_request_repo,
+                    crawl_run_repo=crawl_run_repo,
+                    post_repo=post_repo,
+                )
+                crawl_result = asyncio.run(
+                    ingest_use_case.execute(request, crawler)
+                )
+                st.success(
+                    f"Crawled **{request.keyword}** on {request.platform.value} "
+                    f"— {crawl_result.posts_fetched} posts found ({request.id})"
+                )
+            except Exception as crawl_exc:
+                st.warning(
+                    f"Search created but crawling failed: {crawl_exc}"
+                )
+            finally:
+                conn.close()
     except SocialPulseError as exc:
         st.error(f"Failed to create request: {exc}")
 
