@@ -39,7 +39,6 @@ class _FakeDetector:
 
 @pytest.mark.unit
 class TestLinguaLanguageDetector:
-
     def test_empty_string_returns_unknown(self):
         detector = _FakeDetector(None)
         ld = LinguaLanguageDetector(detector=detector)

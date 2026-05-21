@@ -63,7 +63,6 @@ def _make_ai_enrichment(silver_post_id, **overrides) -> AIEnrichment:
 
 @pytest.mark.unit
 class TestDuckDBAIEnrichmentRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema):
         post = _insert_silver_post(db_with_schema)
         repo = DuckDBAIEnrichmentRepository(db_with_schema)

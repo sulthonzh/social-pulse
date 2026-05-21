@@ -21,7 +21,6 @@ def _make_summary(**overrides: object) -> GoldCampaignSummary:
 
 @pytest.mark.unit
 class TestGoldCampaignSummaryDefaults:
-
     def test_id_auto_generated(self) -> None:
         summary = _make_summary()
         assert isinstance(summary.id, UUID)
@@ -89,7 +88,6 @@ class TestGoldCampaignSummaryDefaults:
 
 @pytest.mark.unit
 class TestGoldCampaignSummaryExplicitValues:
-
     def test_explicit_date_range(self) -> None:
         summary = _make_summary(
             start_date=date(2025, 2, 1),
@@ -137,7 +135,6 @@ class TestGoldCampaignSummaryExplicitValues:
 
 @pytest.mark.unit
 class TestGoldCampaignSummaryRequiredFields:
-
     def test_search_request_id_is_required(self) -> None:
         payload: dict[str, object] = {
             "keyword": "test",
@@ -177,7 +174,6 @@ class TestGoldCampaignSummaryRequiredFields:
 
 @pytest.mark.unit
 class TestGoldCampaignSummaryImmutability:
-
     def test_frozen_model_raises_on_mutation(self) -> None:
         summary = _make_summary()
         with pytest.raises(PydanticValidationError):

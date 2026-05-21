@@ -36,7 +36,6 @@ def _make_enriched_post(**overrides) -> EnrichedPost:
 
 @pytest.mark.unit
 class TestDuckDBEnrichedPostRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema):
         repo = DuckDBEnrichedPostRepository(db_with_schema)
         post = _make_enriched_post()

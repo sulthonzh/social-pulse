@@ -8,7 +8,6 @@ from src.domain.value_objects.sentiment_label import SentimentLabel
 
 @pytest.mark.unit
 class TestSentimentResultCreation:
-
     def _make_result(self, **overrides: object) -> SentimentResult:
         defaults: dict[str, object] = {
             "label": SentimentLabel.POSITIVE,
@@ -46,7 +45,6 @@ class TestSentimentResultCreation:
 
 @pytest.mark.unit
 class TestSentimentResultConfidenceBounds:
-
     def _make_result(self, confidence: float) -> SentimentResult:
         return SentimentResult(
             label=SentimentLabel.POSITIVE,
@@ -86,7 +84,6 @@ class TestSentimentResultConfidenceBounds:
 
 @pytest.mark.unit
 class TestSentimentResultRequiredFields:
-
     def test_label_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             SentimentResult(  # type: ignore[call-arg]

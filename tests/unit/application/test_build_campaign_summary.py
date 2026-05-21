@@ -49,14 +49,17 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildCampaignSummary:
-
     async def test_execute_builds_summary_from_posts(self):
         use_case, post_repo, summary_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
             _make_gold_post(search_request_id=search_request_id, sentiment="positive"),
-            _make_gold_post(search_request_id=search_request_id, sentiment="negative", hashtags=["data"]),
-            _make_gold_post(search_request_id=search_request_id, sentiment="neutral", platform=Platform.FACEBOOK),
+            _make_gold_post(
+                search_request_id=search_request_id, sentiment="negative", hashtags=["data"]
+            ),
+            _make_gold_post(
+                search_request_id=search_request_id, sentiment="neutral", platform=Platform.FACEBOOK
+            ),
         ]
         post_repo.get_by_search_request.return_value = posts
         summary_repo.save.side_effect = _return_summary

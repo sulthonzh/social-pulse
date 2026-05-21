@@ -12,7 +12,6 @@ from src.domain.value_objects.platform import Platform
 
 @pytest.mark.unit
 class TestCrawlRunDefaults:
-
     def _make_crawl_run(self, **overrides: object) -> CrawlRun:
         defaults: dict[str, object] = {
             "search_request_id": uuid4(),
@@ -51,7 +50,6 @@ class TestCrawlRunDefaults:
 
 @pytest.mark.unit
 class TestCrawlRunExplicitValues:
-
     def _make_crawl_run(self, **overrides: object) -> CrawlRun:
         defaults: dict[str, object] = {
             "search_request_id": uuid4(),
@@ -85,7 +83,6 @@ class TestCrawlRunExplicitValues:
 
 @pytest.mark.unit
 class TestCrawlRunRequiredFields:
-
     def test_search_request_id_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             CrawlRun(platform=Platform.TWITTER)  # type: ignore[call-arg]

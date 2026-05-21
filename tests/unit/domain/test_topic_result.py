@@ -7,7 +7,6 @@ from src.domain.entities.topic_result import TopicResult
 
 @pytest.mark.unit
 class TestTopicResultCreation:
-
     def test_basic_creation(self) -> None:
         result = TopicResult(
             topic_label="technology",
@@ -38,7 +37,6 @@ class TestTopicResultCreation:
 
 @pytest.mark.unit
 class TestTopicResultRequiredFields:
-
     def test_topic_label_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             TopicResult(  # type: ignore[call-arg]

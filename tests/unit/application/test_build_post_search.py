@@ -64,7 +64,6 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildPostSearch:
-
     async def test_execute_materializes_posts_with_ai_enrichment(self):
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()

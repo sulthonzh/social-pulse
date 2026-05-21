@@ -104,7 +104,7 @@ class TestSearchPosts:
         assert result.id == saved_id
 
     async def test_raises_on_empty_keyword(self):
-        use_case, repo = _build_use_case()
+        use_case, _repo = _build_use_case()
         with pytest.raises(ValueError, match="non-empty"):
             await use_case.execute(
                 keyword="  ",
@@ -114,7 +114,7 @@ class TestSearchPosts:
             )
 
     async def test_raises_on_invalid_date_range(self):
-        use_case, repo = _build_use_case()
+        use_case, _repo = _build_use_case()
         with pytest.raises(ValueError, match="end_date"):
             await use_case.execute(
                 keyword="test",

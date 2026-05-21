@@ -4,7 +4,6 @@ from datetime import date, datetime
 from uuid import uuid4
 
 import pytest
-
 from src.application.use_cases.get_campaign_analytics import (
     CampaignAnalytics,
     GetCampaignAnalytics,
@@ -89,7 +88,6 @@ def _seed_summary(db_with_schema, summary):
 
 @pytest.mark.unit
 class TestGetCampaignAnalyticsFromSummary:
-
     def test_returns_analytics_from_campaign_summary(self, db_with_schema):
         sr_id = uuid4()
         summary = _make_summary(
@@ -170,7 +168,6 @@ class TestGetCampaignAnalyticsFromSummary:
 
 @pytest.mark.unit
 class TestGetCampaignAnalyticsFromPostSearch:
-
     def test_computes_analytics_from_posts_when_no_summary(self, db_with_schema):
         sr_id = uuid4()
         posts = [
@@ -312,7 +309,6 @@ class TestGetCampaignAnalyticsFromPostSearch:
 
 @pytest.mark.unit
 class TestGetCampaignAnalyticsSentimentDistributionFromSummary:
-
     def test_includes_sentiment_distribution_when_summary_exists(self, db_with_schema):
         sr_id = uuid4()
         summary = _make_summary(search_request_id=sr_id, keyword="python")

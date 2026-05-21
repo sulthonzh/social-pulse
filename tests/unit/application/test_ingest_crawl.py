@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-
 from src.application.use_cases.ingest_crawl import IngestCrawlRun
 from src.domain.entities.crawl_run import CrawlRun
 from src.domain.entities.raw_post import RawPost
@@ -89,7 +88,7 @@ class TestIngestCrawlRun:
         saved_request = _make_request()
         req_repo.save.return_value = saved_request
 
-        crawl_run = _make_crawl_run(saved_request.id)
+        _make_crawl_run(saved_request.id)
         saved_run = _make_crawl_run(saved_request.id)
         run_repo.save.return_value = saved_run
 
@@ -124,7 +123,7 @@ class TestIngestCrawlRun:
         )
 
     async def test_crawl_error_sets_failed_and_reraises(self):
-        use_case, req_repo, run_repo, post_repo, crawler = _build_use_case()
+        use_case, req_repo, run_repo, _post_repo, crawler = _build_use_case()
 
         request = _make_request()
         saved_request = _make_request()
@@ -151,7 +150,7 @@ class TestIngestCrawlRun:
         )
 
     async def test_generic_exception_sets_failed_and_reraises(self):
-        use_case, req_repo, run_repo, post_repo, crawler = _build_use_case()
+        use_case, req_repo, run_repo, _post_repo, crawler = _build_use_case()
 
         saved_request = _make_request()
         req_repo.save.return_value = saved_request
@@ -176,7 +175,7 @@ class TestIngestCrawlRun:
         )
 
     async def test_runtime_error_sets_failed_and_reraises(self):
-        use_case, req_repo, run_repo, post_repo, crawler = _build_use_case()
+        use_case, req_repo, run_repo, _post_repo, crawler = _build_use_case()
 
         saved_request = _make_request()
         req_repo.save.return_value = saved_request
@@ -310,7 +309,7 @@ class TestIngestCrawlRun:
         )
 
     async def test_exception_does_not_swallow_original_error(self):
-        use_case, req_repo, run_repo, post_repo, crawler = _build_use_case()
+        use_case, req_repo, run_repo, _post_repo, crawler = _build_use_case()
 
         saved_request = _make_request()
         req_repo.save.return_value = saved_request

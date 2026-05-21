@@ -8,7 +8,6 @@ from src.domain.value_objects.sentiment_label import SentimentLabel
 
 @pytest.mark.unit
 class TestSentimentLabelEnumValues:
-
     def test_positive_exists(self) -> None:
         assert SentimentLabel.POSITIVE is not None
 
@@ -30,7 +29,6 @@ class TestSentimentLabelEnumValues:
 
 @pytest.mark.unit
 class TestSentimentLabelStrEnumBehavior:
-
     def test_is_string(self) -> None:
         assert isinstance(SentimentLabel.POSITIVE, str)
 
@@ -57,7 +55,6 @@ class TestSentimentLabelStrEnumBehavior:
 
 @pytest.mark.unit
 class TestAIJobStatusEnumValues:
-
     def test_pending_exists(self) -> None:
         assert AIJobStatus.PENDING is not None
 
@@ -85,7 +82,6 @@ class TestAIJobStatusEnumValues:
 
 @pytest.mark.unit
 class TestAIJobStatusStrEnumBehavior:
-
     def test_is_string(self) -> None:
         assert isinstance(AIJobStatus.RUNNING, str)
 
@@ -112,7 +108,6 @@ class TestAIJobStatusStrEnumBehavior:
 
 @pytest.mark.unit
 class TestAIJobTypeEnumValues:
-
     def test_sentiment_exists(self) -> None:
         assert AIJobType.SENTIMENT is not None
 
@@ -140,7 +135,6 @@ class TestAIJobTypeEnumValues:
 
 @pytest.mark.unit
 class TestAIJobTypeStrEnumBehavior:
-
     def test_is_string(self) -> None:
         assert isinstance(AIJobType.SENTIMENT, str)
 

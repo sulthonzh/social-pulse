@@ -134,7 +134,6 @@ def _setup_happy_path_mocks(
 
 @pytest.mark.unit
 class TestEnrichPostUseCase:
-
     async def test_happy_path_saves_all_entities(self):
         (
             use_case,

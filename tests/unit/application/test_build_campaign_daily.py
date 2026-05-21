@@ -45,13 +45,14 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildCampaignDaily:
-
     async def test_execute_aggregates_posts_by_date_and_platform(self):
         use_case, post_repo, daily_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
             _make_gold_post(search_request_id=search_request_id, sentiment="positive"),
-            _make_gold_post(search_request_id=search_request_id, sentiment="negative", hashtags=["data"]),
+            _make_gold_post(
+                search_request_id=search_request_id, sentiment="negative", hashtags=["data"]
+            ),
             _make_gold_post(
                 search_request_id=search_request_id,
                 posted_at=datetime(2025, 1, 16, 10, 0, 0),

@@ -13,7 +13,6 @@ from src.domain.value_objects.ai_job_type import AIJobType
 
 @pytest.mark.unit
 class TestAIJobDefaults:
-
     def _make_job(self, **overrides: Any) -> AIJob:
         defaults: dict[str, Any] = {
             "silver_post_id": uuid4(),
@@ -64,7 +63,6 @@ class TestAIJobDefaults:
 
 @pytest.mark.unit
 class TestAIJobExplicitValues:
-
     def _make_job(self, **overrides: Any) -> AIJob:
         defaults: dict[str, Any] = {
             "silver_post_id": uuid4(),
@@ -119,7 +117,6 @@ class TestAIJobExplicitValues:
 
 @pytest.mark.unit
 class TestAIJobAllTypes:
-
     def test_sentiment_type(self) -> None:
         job = AIJob(silver_post_id=uuid4(), job_type=AIJobType.SENTIMENT)
         assert job.job_type == AIJobType.SENTIMENT
@@ -139,7 +136,6 @@ class TestAIJobAllTypes:
 
 @pytest.mark.unit
 class TestAIJobRequiredFields:
-
     def test_silver_post_id_is_required(self) -> None:
         with pytest.raises(PydanticValidationError):
             AIJob(job_type=AIJobType.SENTIMENT)  # type: ignore[call-arg]

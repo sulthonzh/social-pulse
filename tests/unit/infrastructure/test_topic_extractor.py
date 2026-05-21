@@ -12,7 +12,6 @@ def _run(coro):
 
 @pytest.mark.unit
 class TestKeyBERTTopicExtractor:
-
     def _make_extractor(self, return_value):
         class MockKeyBERT:
             def extract_keywords(self, doc, **kwargs):

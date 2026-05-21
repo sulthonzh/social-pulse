@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from uuid import uuid4
 
 import pytest
-
 from src.domain.entities.search_request import SearchRequest
 from src.domain.value_objects.crawl_status import CrawlStatus
 from src.domain.value_objects.platform import Platform
@@ -29,7 +28,6 @@ def _make_search_request(**overrides) -> SearchRequest:
 
 @pytest.mark.unit
 class TestDuckDBSearchRequestRepository:
-
     def test_save_returns_entity_with_id(self, db_with_schema):
         repo = DuckDBSearchRequestRepository(db_with_schema)
         sr = _make_search_request()
