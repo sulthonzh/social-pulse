@@ -60,7 +60,7 @@ class OpenAITopicExtractor:
             logger.warning("openai_topic_empty_response")
             return _UNKNOWN_RESULT
 
-        result = _parse_response(data, self._client._model)
+        result = _parse_response(data, self._client.model_name)
         logger.debug(
             "topic_extracted",
             topic=result.topic_label,

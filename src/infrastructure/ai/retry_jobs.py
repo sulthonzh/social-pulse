@@ -12,7 +12,7 @@ import structlog
 
 from src.infrastructure.persistence.duckdb_ai_job_repository import DuckDBAIJobRepository
 from src.infrastructure.persistence.migrations import create_all_tables
-from src.shared.config import settings
+from src.shared.db_retry import connect_with_retry
 
 logger = structlog.get_logger()
 
@@ -29,9 +29,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        import duckdb  # noqa: PLC0415
-
-        conn = duckdb.connect(settings.db_path)
+        conn = connect_with_retry()
         try:
             create_all_tables(conn)
             repo = DuckDBAIJobRepository(conn)
@@ -42,7 +40,7 @@ def main() -> None:
             else:
                 logger.info("retry_jobs.reset_complete", reset_count=reset_count)
 
-            print(f"Reset {reset_count} failed job(s) to pending status.")
+            logger.info("retry_jobs.result", reset_count=reset_count)
         finally:
             conn.close()
 
