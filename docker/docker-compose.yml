@@ -27,6 +27,7 @@ services:
       - "8501:8501"
     volumes:
       - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
       - ../scripts:/app/scripts
       - ../.streamlit:/app/.streamlit
       - ../data:/app/data
@@ -57,6 +58,7 @@ services:
       - "8000:8000"
     volumes:
       - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
       - ../data:/app/data
       - model-cache:/app/models
     environment:
@@ -107,6 +109,7 @@ services:
     container_name: socialpulse-crawl-worker
     volumes:
       - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
       - ../data:/app/data
     environment:
       - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}

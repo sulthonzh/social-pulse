@@ -25,7 +25,7 @@ logger = structlog.get_logger()
 def main() -> None:
     parser = argparse.ArgumentParser(description="Trigger a crawl for SocialPulse")
     parser.add_argument("--keyword", required=True)
-    parser.add_argument("--platform", default="twitter", choices=["twitter"])
+    parser.add_argument("--platform", default="twitter", choices=[p.value for p in Platform])
     parser.add_argument("--start-date", help="Start date (YYYY-MM-DD)")
     parser.add_argument("--end-date", help="End date (YYYY-MM-DD)")
 
@@ -41,7 +41,8 @@ def main() -> None:
             search_repo = DuckDBSearchRequestRepository(conn)
             crawl_repo = DuckDBCrawlRunRepository(conn)
             post_repo = DuckDBPostRepository(conn)
-            crawler = create_crawler()
+            platform = Platform(args.platform)
+            crawler = create_crawler(platform=platform)
 
             use_case = IngestCrawlRun(search_repo, crawl_repo, post_repo)
 
@@ -52,7 +53,7 @@ def main() -> None:
                 keyword=args.keyword,
                 start_date=start,
                 end_date=end,
-                platform=Platform.TWITTER,
+                platform=platform,
             )
 
             asyncio.run(use_case.execute(request, crawler))

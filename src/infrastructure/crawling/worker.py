@@ -101,39 +101,31 @@ def _row_to_search_request(row: tuple[object, ...]) -> SearchRequest:
 
 
 class CrawlWorker:
-    """Polls for pending search requests and runs crawl ingestion."""
+    """Polls for pending search requests and runs crawl ingestion.
 
-    def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
-        self._conn = conn
+    Uses short-lived DuckDB connections per poll cycle to avoid holding
+    a persistent write lock that would block concurrent API writes.
+    """
+
+    def __init__(self) -> None:
         self._shutdown_event = asyncio.Event()
+        logger.info("crawl_worker_initialized")
 
-        search_request_repo = DuckDBSearchRequestRepository(conn)
-        crawl_run_repo = DuckDBCrawlRunRepository(conn)
-        post_repo = DuckDBPostRepository(conn)
-
-        self._use_case = IngestCrawlRun(
-            search_request_repo=search_request_repo,
-            crawl_run_repo=crawl_run_repo,
-            post_repo=post_repo,
-        )
-
-        self._crawler = create_crawler()
-        logger.info("crawl_worker_initialized", crawler_type=type(self._crawler).__name__)
-
-    def _fetch_pending_requests(self) -> list[SearchRequest]:
-        """Find search requests with status 'pending'."""
-        rows = self._conn.execute(
-            _PENDING_SQL,
-            [_BATCH_SIZE],
-        ).fetchall()
+    def _fetch_pending_requests(self, conn: duckdb.DuckDBPyConnection) -> list[SearchRequest]:
+        rows = conn.execute(_PENDING_SQL, [_BATCH_SIZE]).fetchall()
         return [_row_to_search_request(row) for row in rows]
 
-    async def _process_request(self, request: SearchRequest) -> None:
-        """Run crawl ingestion for a single request, catching errors."""
+    async def _process_request(self, request: SearchRequest, conn: duckdb.DuckDBPyConnection) -> None:
         request_id = str(request.id)
-        logger.info("crawl_job_processing", request_id=request_id, keyword=request.keyword)
+        logger.info("crawl_job_processing", request_id=request_id, keyword=request.keyword, platform=request.platform)
         try:
-            result = await self._use_case.execute(request, self._crawler)
+            use_case = IngestCrawlRun(
+                search_request_repo=DuckDBSearchRequestRepository(conn),
+                crawl_run_repo=DuckDBCrawlRunRepository(conn),
+                post_repo=DuckDBPostRepository(conn),
+            )
+            crawler = create_crawler(platform=request.platform)
+            result = await use_case.execute(request, crawler)
             logger.info(
                 "crawl_job_completed",
                 request_id=request_id,
@@ -144,20 +136,29 @@ class CrawlWorker:
             logger.exception("crawl_job_failed", request_id=request_id)
 
     async def _run_once(self) -> int:
-        """Single poll iteration. Returns number of requests processed."""
-        requests = self._fetch_pending_requests()
-        if not requests:
-            return 0
+        """Single poll iteration with its own DB connection.
 
-        logger.info("crawl_batch_started", pending_count=len(requests))
-        for request in requests:
-            if self._shutdown_event.is_set():
-                break
-            await self._process_request(request)
-        return len(requests)
+        Opens a connection, processes pending requests, then closes it
+        to release the DuckDB write lock before sleeping.
+        """
+        import duckdb
+
+        conn = duckdb.connect(settings.db_path)
+        try:
+            requests = self._fetch_pending_requests(conn)
+            if not requests:
+                return 0
+
+            logger.info("crawl_batch_started", pending_count=len(requests))
+            for request in requests:
+                if self._shutdown_event.is_set():
+                    break
+                await self._process_request(request, conn)
+            return len(requests)
+        finally:
+            conn.close()
 
     async def run_forever(self) -> None:
-        """Main loop: poll, process, sleep, repeat until shutdown."""
         logger.info(
             "crawl_worker_started",
             poll_interval=_POLL_INTERVAL_SECONDS,
@@ -174,15 +175,15 @@ class CrawlWorker:
         logger.info("crawl_worker_stopped")
 
     def request_shutdown(self) -> None:
-        """Signal the worker to stop after current work completes."""
         self._shutdown_event.set()
 
 
 async def run(conn: duckdb.DuckDBPyConnection) -> None:
     """Entry point: run migrations, wire up the worker, handle signals."""
     create_all_tables(conn)
+    conn.close()
 
-    worker = CrawlWorker(conn)
+    worker = CrawlWorker()
 
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
