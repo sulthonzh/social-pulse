@@ -7,6 +7,8 @@ import structlog
 from src.domain.entities.gold_post_search import GoldPostSearch
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from src.domain.interfaces import (
         AIEnrichmentRepository,
         EnrichedPostRepository,
@@ -27,8 +29,18 @@ class BuildPostSearch:
         self._ai_enrichment_repo = ai_enrichment_repo
         self._gold_post_search_repo = gold_post_search_repo
 
-    async def execute(self, search_request_id: str, keyword: str) -> int:
-        enriched_posts = self._enriched_post_repo.get_by_search(search_request_id)
+    async def execute(
+        self,
+        search_request_id: str,
+        keyword: str,
+        since: datetime | None = None,
+    ) -> int:
+        if since is not None:
+            enriched_posts = self._enriched_post_repo.get_enriched_since(
+                search_request_id, since
+            )
+        else:
+            enriched_posts = self._enriched_post_repo.get_by_search(search_request_id)
 
         if not enriched_posts:
             logger.info(

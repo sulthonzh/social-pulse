@@ -179,6 +179,18 @@ class DuckDBEnrichedPostRepository:
         ).fetchall()
         return [_row_to_enriched_post(row) for row in rows]
 
+    def get_enriched_since(self, search_request_id: str, since: datetime) -> list[EnrichedPost]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_SELECT_COLUMNS}
+            FROM {_TABLE}
+            WHERE search_request_id = ? AND created_at > ?
+            ORDER BY posted_at DESC
+            """,
+            [search_request_id, since],
+        ).fetchall()
+        return [_row_to_enriched_post(row) for row in rows]
+
     def count_by_search(self, search_request_id: str) -> int:
         result_row = self._conn.execute(
             f"SELECT count(*) FROM {_TABLE} WHERE search_request_id = ?",

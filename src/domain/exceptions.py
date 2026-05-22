@@ -27,3 +27,11 @@ class EnrichmentError(SocialPulseError):
 
 class AIJobError(SocialPulseError):
     """Raised when an AI job fails."""
+
+
+class RepositoryError(SocialPulseError):
+    """Raised when a repository/persistence operation fails."""
+
+
+class TransientError(SocialPulseError):
+    """Raised when a transient/retryable operation fails."""
