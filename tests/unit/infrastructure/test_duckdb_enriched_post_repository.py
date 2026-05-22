@@ -155,3 +155,68 @@ class TestDuckDBEnrichedPostRepository:
         assert len(results) == 2
         assert results[0].platform_id == "new"
         assert results[1].platform_id == "old"
+
+    def test_get_by_search_paginated_returns_batch(self, db_with_schema):
+        repo = DuckDBEnrichedPostRepository(db_with_schema)
+        sr_id = uuid4()
+        posts = [_make_enriched_post(search_request_id=sr_id) for _ in range(5)]
+        repo.save_batch(posts)
+
+        results = repo.get_by_search_paginated(str(sr_id), limit=3, offset=0)
+        assert len(results) == 3
+
+    def test_get_by_search_paginated_offset_beyond_returns_empty(self, db_with_schema):
+        repo = DuckDBEnrichedPostRepository(db_with_schema)
+        sr_id = uuid4()
+        posts = [_make_enriched_post(search_request_id=sr_id) for _ in range(3)]
+        repo.save_batch(posts)
+
+        results = repo.get_by_search_paginated(str(sr_id), limit=3, offset=100)
+        assert results == []
+
+    def test_get_by_search_paginated_second_page(self, db_with_schema):
+        repo = DuckDBEnrichedPostRepository(db_with_schema)
+        sr_id = uuid4()
+        posts = [_make_enriched_post(search_request_id=sr_id) for _ in range(5)]
+        repo.save_batch(posts)
+
+        results = repo.get_by_search_paginated(str(sr_id), limit=3, offset=3)
+        assert len(results) == 2
+
+    def test_get_enriched_since_paginated_returns_batch(self, db_with_schema):
+        repo = DuckDBEnrichedPostRepository(db_with_schema)
+        sr_id = uuid4()
+        cutoff = datetime(2025, 1, 15, 11, 0, 0)
+        posts = [
+            _make_enriched_post(
+                search_request_id=sr_id,
+                created_at=datetime(2025, 1, 15, 12, 0, 0),
+            ),
+            _make_enriched_post(
+                search_request_id=sr_id,
+                created_at=datetime(2025, 1, 15, 13, 0, 0),
+            ),
+            _make_enriched_post(
+                search_request_id=sr_id,
+                created_at=datetime(2025, 1, 15, 14, 0, 0),
+            ),
+        ]
+        repo.save_batch(posts)
+
+        results = repo.get_enriched_since_paginated(str(sr_id), cutoff, limit=2, offset=0)
+        assert len(results) == 2
+
+    def test_get_enriched_since_paginated_offset_beyond_returns_empty(self, db_with_schema):
+        repo = DuckDBEnrichedPostRepository(db_with_schema)
+        sr_id = uuid4()
+        cutoff = datetime(2025, 1, 15, 11, 0, 0)
+        posts = [
+            _make_enriched_post(
+                search_request_id=sr_id,
+                created_at=datetime(2025, 1, 15, 12, 0, 0),
+            ),
+        ]
+        repo.save_batch(posts)
+
+        results = repo.get_enriched_since_paginated(str(sr_id), cutoff, limit=10, offset=100)
+        assert results == []
