@@ -22,7 +22,7 @@ def render() -> None:
 
     conn = None
     try:
-        conn = get_db_connection()
+        conn = get_db_connection(read_only=True)
 
         from src.application.use_cases.get_campaigns import GetCampaigns  # noqa: PLC0415
         from src.infrastructure.persistence.duckdb_gold_post_search_repository import (  # noqa: PLC0415
