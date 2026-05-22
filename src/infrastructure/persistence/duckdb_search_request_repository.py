@@ -94,6 +94,14 @@ class DuckDBSearchRequestRepository:
             [status, posts_found, request_id],
         )
 
+    def get_recent(self, limit: int = 20) -> list[SearchRequest]:
+        logger.debug("fetching_recent_search_requests", limit=limit)
+        rows = self._conn.execute(
+            f"SELECT {_SELECT_COLUMNS} FROM {_TABLE} ORDER BY created_at DESC LIMIT ?",
+            [limit],
+        ).fetchall()
+        return [self._row_to_entity(row) for row in rows]
+
     @staticmethod
     def _row_to_entity(row: tuple[object, ...]) -> SearchRequest:
         (

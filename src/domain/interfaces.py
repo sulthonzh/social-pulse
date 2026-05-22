@@ -59,6 +59,10 @@ class SearchRequestRepository(Protocol):
         """Update search request status and posts count."""
         ...
 
+    def get_recent(self, limit: int = 20) -> list[SearchRequest]:
+        """Get most recent search requests, ordered by created_at descending."""
+        ...
+
 
 class CrawlRunRepository(Protocol):
     """Repository for crawl run persistence."""
