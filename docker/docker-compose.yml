@@ -211,6 +211,7 @@ services:
     container_name: socialpulse-lint
     volumes:
       - ../src:/app/src
+      - ../tests:/app/tests
     profiles:
       - ci
     networks:
