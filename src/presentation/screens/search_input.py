@@ -150,7 +150,7 @@ def render() -> None:
         use_case = ListSearchRequests(repo)
         requests = use_case.execute(limit=20)
         conn.close()
-    except Exception:
+    except SocialPulseError:
         requests = []
 
     if not requests:

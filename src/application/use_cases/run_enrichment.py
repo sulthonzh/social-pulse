@@ -9,6 +9,7 @@ import structlog
 
 from src.application.use_cases.enrich_post import EnrichPostUseCase
 from src.domain.entities.raw_post import RawPost
+from src.domain.exceptions import EnrichmentError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.ai.language_detector import LinguaLanguageDetector
 from src.infrastructure.ai.sentiment_analyzer import TransformerSentimentAnalyzer
@@ -112,7 +113,7 @@ async def _run_enrichment(conn: duckdb.DuckDBPyConnection, limit: int) -> None:
         try:
             await use_case.execute(post)
             processed += 1
-        except Exception:
+        except EnrichmentError:
             logger.exception("enrichment_post_failed", raw_post_id=str(post.id))
 
     logger.info("enrichment_completed", processed=processed, total=len(posts))
