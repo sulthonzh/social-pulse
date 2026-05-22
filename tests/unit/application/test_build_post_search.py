@@ -52,9 +52,9 @@ def _make_ai_enrichment(post_id: UUID, **overrides: object) -> AIEnrichment:
 
 
 def _build_use_case():
-    enriched_post_repo = MagicMock(spec=["get_by_search"])
+    enriched_post_repo = MagicMock(spec=["get_by_search", "get_enriched_since"])
     ai_enrichment_repo = MagicMock(spec=["get_by_posts"])
-    gold_post_search_repo = MagicMock(spec=["save_batch"])
+    gold_post_search_repo = MagicMock(spec=["save_batch", "delete_by_search_request"])
     use_case = BuildPostSearch(
         enriched_post_repo=enriched_post_repo,
         ai_enrichment_repo=ai_enrichment_repo,
@@ -117,3 +117,58 @@ class TestBuildPostSearch:
         assert result == 0
         ai_repo.get_by_posts.assert_not_called()
         gold_repo.save_batch.assert_not_called()
+
+    async def test_execute_with_since_fetches_enriched_posts_since(self):
+        use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
+        search_request_id = uuid4()
+        post = _make_enriched_post(search_request_id=search_request_id)
+        enrichment = _make_ai_enrichment(post.id)
+        since = datetime(2025, 6, 1, 0, 0, 0)
+
+        enriched_repo.get_enriched_since.return_value = [post]
+        ai_repo.get_by_posts.return_value = {str(post.id): enrichment}
+        gold_repo.save_batch.return_value = 1
+
+        result = await use_case.execute(
+            str(search_request_id), keyword="python", since=since
+        )
+
+        assert result == 1
+        enriched_repo.get_enriched_since.assert_called_once_with(
+            str(search_request_id), since
+        )
+        enriched_repo.get_by_search.assert_not_called()
+        saved_posts: list[GoldPostSearch] = gold_repo.save_batch.call_args[0][0]
+        assert len(saved_posts) == 1
+        assert saved_posts[0].keyword == "python"
+
+    async def test_execute_with_since_returns_zero_when_no_new_posts(self):
+        use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
+        since = datetime(2025, 6, 1, 0, 0, 0)
+
+        enriched_repo.get_enriched_since.return_value = []
+
+        result = await use_case.execute(
+            str(uuid4()), keyword="python", since=since
+        )
+
+        assert result == 0
+        enriched_repo.get_enriched_since.assert_called_once()
+        ai_repo.get_by_posts.assert_not_called()
+        gold_repo.save_batch.assert_not_called()
+
+    async def test_execute_without_since_uses_get_by_search(self):
+        use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
+        search_request_id = uuid4()
+        post = _make_enriched_post(search_request_id=search_request_id)
+        enrichment = _make_ai_enrichment(post.id)
+
+        enriched_repo.get_by_search.return_value = [post]
+        ai_repo.get_by_posts.return_value = {str(post.id): enrichment}
+        gold_repo.save_batch.return_value = 1
+
+        result = await use_case.execute(str(search_request_id), keyword="python")
+
+        assert result == 1
+        enriched_repo.get_by_search.assert_called_once_with(str(search_request_id))
+        enriched_repo.get_enriched_since.assert_not_called()
