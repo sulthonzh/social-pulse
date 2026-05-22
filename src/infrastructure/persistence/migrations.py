@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import duckdb
 
-SCHEMA_VERSION: int = 3
+SCHEMA_VERSION: int = 4
 
 
 def create_all_tables(conn: duckdb.DuckDBPyConnection) -> None:
@@ -412,5 +412,17 @@ def run_migrations(conn: duckdb.DuckDBPyConnection) -> None:
             posts_processed   INTEGER DEFAULT 0,
             UNIQUE(search_request_id)
         )
+        """,
+    )
+
+    _apply_migration(
+        conn,
+        4,
+        "add time-based indexes for incremental query performance",
+        """
+        CREATE INDEX IF NOT EXISTS idx_silver_posts_created_at ON silver.silver_posts(created_at);
+        CREATE INDEX IF NOT EXISTS idx_silver_enrichment_created_at ON silver.silver_ai_enrichment(created_at);
+        CREATE INDEX IF NOT EXISTS idx_gold_post_search_created_at ON gold.gold_post_search(created_at);
+        CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_created_at ON gold.gold_campaign_daily(created_at);
         """,
     )

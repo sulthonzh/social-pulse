@@ -12,7 +12,9 @@ logger = structlog.get_logger()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Purge old records from SocialPulse")
-    parser.add_argument("--dry-run", action="store_true", default=False, help="Show counts without deleting")
+    parser.add_argument(
+        "--dry-run", action="store_true", default=False, help="Show counts without deleting"
+    )
     parser.add_argument(
         "--days",
         type=int,

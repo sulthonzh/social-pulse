@@ -277,15 +277,11 @@ async def test_builder_raises_on_closed_connection(
 async def test_builder_processes_multiple_campaigns(
     db_with_schema: duckdb.DuckDBPyConnection,
 ):
-    request_id_a = _insert_completed_search_request(
-        db_with_schema, keyword="django"
-    )
+    request_id_a = _insert_completed_search_request(db_with_schema, keyword="django")
     posts_a = _insert_enriched_posts(db_with_schema, request_id_a, count=2)
     _insert_ai_enrichments(db_with_schema, posts_a)
 
-    request_id_b = _insert_completed_search_request(
-        db_with_schema, keyword="flask"
-    )
+    request_id_b = _insert_completed_search_request(db_with_schema, keyword="flask")
     posts_b = _insert_enriched_posts(db_with_schema, request_id_b, count=2)
     _insert_ai_enrichments(db_with_schema, posts_b)
 
@@ -293,8 +289,7 @@ async def test_builder_processes_multiple_campaigns(
     await builder.run()
 
     gold_posts = db_with_schema.execute(
-        "SELECT keyword, count(*) FROM gold.gold_post_search "
-        "GROUP BY keyword ORDER BY keyword",
+        "SELECT keyword, count(*) FROM gold.gold_post_search GROUP BY keyword ORDER BY keyword",
     ).fetchall()
     assert len(gold_posts) == 2
     keywords = {row[0]: row[1] for row in gold_posts}
