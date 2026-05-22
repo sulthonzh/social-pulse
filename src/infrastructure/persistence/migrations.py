@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import duckdb
 
-SCHEMA_VERSION: int = 2
+SCHEMA_VERSION: int = 3
 
 
 def create_all_tables(conn: duckdb.DuckDBPyConnection) -> None:
@@ -398,5 +398,19 @@ def run_migrations(conn: duckdb.DuckDBPyConnection) -> None:
         """
         ALTER TABLE silver.silver_ai_enrichment ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
         ALTER TABLE gold.gold_post_search ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
+        """,
+    )
+
+    _apply_migration(
+        conn,
+        3,
+        "add gold_build_tracking table for incremental builds",
+        """
+        CREATE TABLE IF NOT EXISTS config.gold_build_tracking (
+            search_request_id UUID NOT NULL,
+            last_built_at     TIMESTAMP NOT NULL,
+            posts_processed   INTEGER DEFAULT 0,
+            UNIQUE(search_request_id)
+        )
         """,
     )

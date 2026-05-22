@@ -176,6 +176,23 @@ class DuckDBGoldPostSearchRepository:
         )
         return inserted
 
+    def delete_by_search_request(self, search_request_id: str) -> int:
+        count_row = self._conn.execute(
+            f"SELECT count(*) FROM {_TABLE} WHERE search_request_id = ?",
+            [search_request_id],
+        ).fetchone()
+        count_before = int(str(count_row[0])) if count_row is not None else 0
+        self._conn.execute(
+            f"DELETE FROM {_TABLE} WHERE search_request_id = ?",
+            [search_request_id],
+        )
+        logger.debug(
+            "gold_post_search.deleted_by_search_request",
+            search_request_id=search_request_id,
+            deleted=count_before,
+        )
+        return count_before
+
     def get_by_keyword(
         self, keyword: str, limit: int = 100, offset: int = 0
     ) -> list[GoldPostSearch]:

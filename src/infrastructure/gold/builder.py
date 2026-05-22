@@ -18,6 +18,9 @@ from src.infrastructure.persistence.duckdb_ai_enrichment_repository import (
 from src.infrastructure.persistence.duckdb_enriched_post_repository import (
     DuckDBEnrichedPostRepository,
 )
+from src.infrastructure.persistence.duckdb_gold_build_tracking_repository import (
+    DuckDBGoldBuildTrackingRepository,
+)
 from src.infrastructure.persistence.duckdb_gold_campaign_daily_repository import (
     DuckDBGoldCampaignDailyRepository,
 )
@@ -42,6 +45,7 @@ class GoldBuilder:
         self._gold_post_search_repo = DuckDBGoldPostSearchRepository(conn)
         self._gold_daily_repo = DuckDBGoldCampaignDailyRepository(conn)
         self._gold_summary_repo = DuckDBGoldCampaignSummaryRepository(conn)
+        self._tracking_repo = DuckDBGoldBuildTrackingRepository(conn)
 
         self._build_post_search = BuildPostSearch(
             self._enriched_post_repo,
@@ -93,19 +97,52 @@ class GoldBuilder:
                 keyword=keyword,
             )
 
-            await self._build_post_search.execute(str(request_id), keyword)
-            await self._build_campaign_daily.execute(str(request_id))
+            rid = str(request_id)
+            last_build = self._tracking_repo.get_last_build(rid)
+
+            if last_build is not None:
+                logger.info(
+                    "incremental_build",
+                    search_request_id=rid,
+                    last_build=last_build.isoformat(),
+                )
+                new_posts = self._enriched_post_repo.get_enriched_since(rid, last_build)
+
+                if not new_posts:
+                    logger.info(
+                        "build_skipped_no_new_posts",
+                        search_request_id=rid,
+                    )
+                    continue
+
+                self._gold_post_search_repo.delete_by_search_request(rid)
+                self._gold_daily_repo.delete_by_search_request(rid)
+
+                posts_processed = await self._build_post_search.execute(
+                    rid, keyword, since=last_build
+                )
+            else:
+                logger.info(
+                    "full_build",
+                    search_request_id=rid,
+                )
+
+                posts_processed = await self._build_post_search.execute(rid, keyword)
+
+            await self._build_campaign_daily.execute(rid)
             await self._build_campaign_summary.execute(
-                str(request_id),
+                rid,
                 start_date if isinstance(start_date, date) else date.fromisoformat(str(start_date)),
                 end_date if isinstance(end_date, date) else date.fromisoformat(str(end_date)),
             )
+
+            self._tracking_repo.record_build(rid, posts_processed)
 
             logger.info(
                 "build_completed",
                 index=idx,
                 total=total,
-                search_request_id=str(request_id),
+                search_request_id=rid,
             )
 
         logger.info("builder_finished", total_processed=total)
