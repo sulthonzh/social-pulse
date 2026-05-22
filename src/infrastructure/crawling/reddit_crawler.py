@@ -31,22 +31,40 @@ _REQUEST_TIMEOUT = 30
 def _extract_metadata(child: dict[str, Any]) -> dict[str, Any]:
     """Extract standardized metadata from a Reddit post listing child."""
     data = child.get("data", {})
+    created_utc = data.get("created_utc", 0.0)
+    title = data.get("title", "")
+    selftext = data.get("selftext", "")
+    author = data.get("author", "")
+    permalink = data.get("permalink", "")
+
+    posted_at_iso = ""
+    if created_utc:
+        posted_at_iso = datetime.fromtimestamp(created_utc, tz=UTC).isoformat()
+
     return {
-        "id": data.get("name", ""),  # t3_<id> fullname
+        "id": data.get("name", ""),
         "reddit_id": data.get("id", ""),
-        "title": data.get("title", ""),
-        "selftext": data.get("selftext", ""),
-        "author": data.get("author", ""),
+        "title": title,
+        "selftext": selftext,
+        "text": f"{title} {selftext}".strip(),
+        "author": author,
+        "author_name": author,
         "subreddit": data.get("subreddit", ""),
         "score": data.get("score", 0),
         "num_comments": data.get("num_comments", 0),
         "upvote_ratio": data.get("upvote_ratio", 0.0),
-        "created_utc": data.get("created_utc", 0.0),
-        "permalink": data.get("permalink", ""),
+        "created_utc": created_utc,
+        "posted_at": posted_at_iso,
+        "permalink": permalink,
         "url": data.get("url", ""),
+        "post_url": f"https://www.reddit.com{permalink}" if permalink else "",
         "thumbnail": data.get("thumbnail", ""),
         "link_flair_text": data.get("link_flair_text"),
         "is_self": data.get("is_video", False) is False and data.get("is_self", True),
+        "public_metrics": {
+            "like_count": data.get("score", 0),
+            "reply_count": data.get("num_comments", 0),
+        },
     }
 
 

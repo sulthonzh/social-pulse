@@ -67,14 +67,19 @@ class EnrichPostUseCase:
             platform=raw_post.platform,
             platform_id=raw_post.platform_id,
             author_handle=raw_post.author_handle,
-            author_name=payload.get("author_name"),
+            author_name=payload.get("author_name") or payload.get("author") or payload.get("channel") or payload.get("uploader"),
             post_text=text,
-            posted_at=self._parse_datetime(payload.get("posted_at") or payload.get("created_at")),
-            post_url=payload.get("post_url"),
-            like_count=metrics.get("like_count", payload.get("like_count", 0)),
-            share_count=metrics.get("retweet_count", payload.get("share_count", 0)),
-            reply_count=metrics.get("reply_count", payload.get("reply_count", 0)),
-            view_count=metrics.get("impression_count", payload.get("view_count", 0)),
+            posted_at=self._parse_datetime(
+                payload.get("posted_at")
+                or payload.get("created_at")
+                or payload.get("created_utc")
+                or payload.get("upload_date")
+            ),
+            post_url=payload.get("post_url") or payload.get("url"),
+            like_count=metrics.get("like_count") or payload.get("like_count") or 0,
+            share_count=metrics.get("retweet_count") or payload.get("share_count") or 0,
+            reply_count=metrics.get("reply_count") or payload.get("reply_count") or 0,
+            view_count=metrics.get("impression_count") or payload.get("view_count") or 0,
             is_retweet=payload.get("is_retweet", False),
         )
 
@@ -129,10 +134,10 @@ class EnrichPostUseCase:
                 f"AI enrichment failed for post {raw_post.id}: {exc}",
             ) from exc
 
-        view_count = metrics.get("impression_count", payload.get("view_count", 0))
-        like_count = metrics.get("like_count", payload.get("like_count", 0))
-        share_count = metrics.get("retweet_count", payload.get("share_count", 0))
-        reply_count = metrics.get("reply_count", payload.get("reply_count", 0))
+        view_count = metrics.get("impression_count") or payload.get("view_count") or 0
+        like_count = metrics.get("like_count") or payload.get("like_count") or 0
+        share_count = metrics.get("retweet_count") or payload.get("share_count") or 0
+        reply_count = metrics.get("reply_count") or payload.get("reply_count") or 0
         total_engagement = like_count + share_count + reply_count
         reach_estimate = view_count if view_count > 0 else total_engagement * 10
 
@@ -213,7 +218,15 @@ class EnrichPostUseCase:
         payload: dict[str, Any] | None = raw_post.raw_payload
         if payload is None:
             return ""
-        return str(payload.get("text", ""))
+        # Normalized 'text' key (twitter, facebook, future crawlers)
+        text = payload.get("text")
+        if text:
+            return str(text)
+        # Fallback: combine title + body for Reddit (selftext) / YouTube (description)
+        title = str(payload.get("title") or "")
+        body = str(payload.get("selftext") or payload.get("description") or "")
+        combined = f"{title} {body}".strip()
+        return combined if combined else ""
 
     @staticmethod
     def _parse_datetime(value: Any) -> datetime | None:
@@ -221,7 +234,18 @@ class EnrichPostUseCase:
             return None
         if isinstance(value, datetime):
             return value
+        if isinstance(value, (int, float)):
+            if value > 0:
+                return datetime.fromtimestamp(value, tz=UTC)
+            return None
         if isinstance(value, str):
+            if not value:
+                return None
+            if len(value) == 8 and value.isdigit():
+                return datetime(
+                    int(value[:4]), int(value[4:6]), int(value[6:8]),
+                    tzinfo=UTC,
+                )
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
         return None
 
