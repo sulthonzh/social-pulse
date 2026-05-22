@@ -134,30 +134,32 @@ def _seed_gold_posts(
         values: list[list[object]] = []
         for i in range(batch):
             idx = offset + i
-            values.append([
-                str(uuid4()),
-                search_request_id,
-                keyword,
-                _PLATFORMS[idx % len(_PLATFORMS)].value,
-                f"user_{idx}",
-                f"User {idx}",
-                f"Gold post content {idx} about data engineering",
-                datetime(2024, 1, 1, 10, idx % 60, 0) + timedelta(days=idx % 365),
-                f"https://example.com/post/{idx}",
-                _SENTIMENTS[idx % 3].value,
-                0.80 + (idx % 20) * 0.01,
-                _TOPICS[idx % len(_TOPICS)],
-                None,
-                "en",
-                [f"tag{idx % 10}", "benchmark"],
-                [f"@user_{idx % 5}"],
-                idx % 100,
-                idx % 50,
-                idx % 20,
-                idx * 10,
-                1,
-                datetime.now(UTC),
-            ])
+            values.append(
+                [
+                    str(uuid4()),
+                    search_request_id,
+                    keyword,
+                    _PLATFORMS[idx % len(_PLATFORMS)].value,
+                    f"user_{idx}",
+                    f"User {idx}",
+                    f"Gold post content {idx} about data engineering",
+                    datetime(2024, 1, 1, 10, idx % 60, 0) + timedelta(days=idx % 365),
+                    f"https://example.com/post/{idx}",
+                    _SENTIMENTS[idx % 3].value,
+                    0.80 + (idx % 20) * 0.01,
+                    _TOPICS[idx % len(_TOPICS)],
+                    None,
+                    "en",
+                    [f"tag{idx % 10}", "benchmark"],
+                    [f"@user_{idx % 5}"],
+                    idx % 100,
+                    idx % 50,
+                    idx % 20,
+                    idx * 10,
+                    1,
+                    datetime.now(UTC),
+                ]
+            )
         conn.executemany(
             "INSERT INTO gold.gold_post_search "
             "(id, search_request_id, keyword, platform, "

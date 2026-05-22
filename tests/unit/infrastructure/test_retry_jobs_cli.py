@@ -69,7 +69,9 @@ class TestRetryJobsCLI:
     def test_main_db_connection_failure_exits(self):
         with (
             patch.object(
-                retry_jobs_module, "connect_with_retry", side_effect=RuntimeError("connection failed")
+                retry_jobs_module,
+                "connect_with_retry",
+                side_effect=RuntimeError("connection failed"),
             ),
             patch("sys.argv", ["retry_jobs"]),
         ):

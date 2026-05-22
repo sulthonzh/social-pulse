@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import signal
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -39,6 +40,7 @@ logger = structlog.get_logger(__name__)
 class GoldBuilder:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
+        self._shutdown_event: asyncio.Event = asyncio.Event()
 
         self._enriched_post_repo = DuckDBEnrichedPostRepository(conn)
         self._ai_enrichment_repo = DuckDBAIEnrichmentRepository(conn)
@@ -89,6 +91,14 @@ class GoldBuilder:
         for idx, (request_id, keyword, start_date, end_date) in enumerate(
             rows[:batch_size], start=1
         ):
+            if self._shutdown_event.is_set():
+                logger.info(
+                    "builder_shutdown_mid_batch",
+                    index=idx,
+                    total=total,
+                )
+                break
+
             logger.info(
                 "building_search",
                 index=idx,
@@ -135,7 +145,9 @@ class GoldBuilder:
                 await self._build_campaign_daily.execute(rid)
                 await self._build_campaign_summary.execute(
                     rid,
-                    start_date if isinstance(start_date, date) else date.fromisoformat(str(start_date)),
+                    start_date
+                    if isinstance(start_date, date)
+                    else date.fromisoformat(str(start_date)),
                     end_date if isinstance(end_date, date) else date.fromisoformat(str(end_date)),
                 )
 
@@ -154,6 +166,10 @@ class GoldBuilder:
 
         logger.info("builder_finished", total_processed=total)
 
+    def request_shutdown(self) -> None:
+        """Signal the builder to stop after current work completes."""
+        self._shutdown_event.set()
+
 
 async def run() -> None:
     from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
@@ -162,6 +178,14 @@ async def run() -> None:
 
     try:
         builder = GoldBuilder(conn)
+
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(
+                sig,
+                builder.request_shutdown,
+            )
+
         await builder.run()
     finally:
         conn.close()

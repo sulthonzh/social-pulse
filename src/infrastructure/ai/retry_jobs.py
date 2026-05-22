@@ -3,6 +3,7 @@
 Usage:
     python -m src.infrastructure.ai.retry_jobs [--job-type TYPE]
 """
+
 from __future__ import annotations
 
 import argparse

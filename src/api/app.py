@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import uuid
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from datetime import date
 from typing import TYPE_CHECKING, Any
@@ -15,17 +17,35 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
+from starlette.responses import JSONResponse, Response
 
 from src.api.events import EventBus, PipelineEvent, PipelineStage, event_bus
 from src.api.metrics import MetricsResponse, metrics
+from src.api.rate_limiter import RateLimiter
 from src.shared.config import settings
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, Awaitable, Callable
+
+    from starlette.requests import Request
 
 HTTP_ERROR_THRESHOLD = 400
 
 logger = structlog.get_logger(__name__)
+
+_recent_starts: OrderedDict[str, tuple[str, float]] = OrderedDict()
+_DEDUP_TTL_SECONDS = 300  # 5 minutes
+
+
+def _dedup_key(request: PipelineStartRequest) -> str:
+    return f"{request.keyword}:{request.platform}:{request.start_date}:{request.end_date}"
+
+
+def _cleanup_expired_starts() -> None:
+    now = time.monotonic()
+    expired = [key for key, (_, ts) in _recent_starts.items() if now - ts > _DEDUP_TTL_SECONDS]
+    for key in expired:
+        del _recent_starts[key]
 
 
 class PipelineStartRequest(BaseModel):
@@ -177,8 +197,8 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
 
 
 _ALLOWED_ORIGINS = [
-    "http://localhost:8501",   # Streamlit dev
-    "http://localhost:3000",   # Frontend dev
+    "http://localhost:8501",  # Streamlit dev
+    "http://localhost:3000",  # Frontend dev
     "http://socialpulse-app:8501",  # Docker internal
 ]
 
@@ -208,6 +228,45 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+_rate_limiter = RateLimiter(max_requests=settings.rate_limit_per_minute)
+
+
+@app.middleware("http")
+async def rate_limit_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if request.url.path == "/api/pipeline/start" and request.method == "POST":
+        client_host = request.client.host if request.client else "unknown"
+        if not _rate_limiter.is_allowed(client_host):
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Rate limit exceeded"},
+            )
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def auth_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if not settings.api_key:
+        return await call_next(request)
+
+    path = request.url.path
+    if path == "/api/health" or not path.startswith("/api/"):
+        return await call_next(request)
+
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key != settings.api_key:
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Unauthorized"},
+        )
+
+    return await call_next(request)
 
 
 @app.get("/api/health", response_model=HealthResponse)
@@ -239,8 +298,19 @@ async def get_metrics() -> MetricsResponse:
 @app.post("/api/pipeline/start", response_model=PipelineStartResponse)
 async def start_pipeline(request: PipelineStartRequest) -> PipelineStartResponse:
     """Start a new pipeline run. Returns a run_id for SSE subscription."""
+    _cleanup_expired_starts()
+
+    key = _dedup_key(request)
+    cached = _recent_starts.get(key)
+    if cached is not None:
+        existing_run_id, timestamp = cached
+        if time.monotonic() - timestamp < _DEDUP_TTL_SECONDS:
+            return PipelineStartResponse(run_id=existing_run_id, message="Pipeline already running")
+
     run_id = str(uuid.uuid4())
     event_bus.create_run(run_id)
+
+    _recent_starts[key] = (run_id, time.monotonic())
 
     start_date = date.fromisoformat(request.start_date)
     end_date = date.fromisoformat(request.end_date)

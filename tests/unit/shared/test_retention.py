@@ -30,11 +30,16 @@ def _insert_search_request(conn: duckdb.DuckDBPyConnection, **overrides: object)
     defaults.update(overrides)
     cols = ", ".join(defaults.keys())
     placeholders = ", ".join("?" for _ in defaults)
-    conn.execute(f"INSERT INTO bronze.search_requests ({cols}) VALUES ({placeholders})", list(defaults.values()))
+    conn.execute(
+        f"INSERT INTO bronze.search_requests ({cols}) VALUES ({placeholders})",
+        list(defaults.values()),
+    )
     return sid
 
 
-def _insert_crawl_run(conn: duckdb.DuckDBPyConnection, search_request_id: str, **overrides: object) -> str:
+def _insert_crawl_run(
+    conn: duckdb.DuckDBPyConnection, search_request_id: str, **overrides: object
+) -> str:
     rid = str(uuid4())
     defaults: dict[str, object] = {
         "id": rid,
@@ -45,7 +50,10 @@ def _insert_crawl_run(conn: duckdb.DuckDBPyConnection, search_request_id: str, *
     defaults.update(overrides)
     cols = ", ".join(defaults.keys())
     placeholders = ", ".join("?" for _ in defaults)
-    conn.execute(f"INSERT INTO bronze.bronze_crawl_runs ({cols}) VALUES ({placeholders})", list(defaults.values()))
+    conn.execute(
+        f"INSERT INTO bronze.bronze_crawl_runs ({cols}) VALUES ({placeholders})",
+        list(defaults.values()),
+    )
     return rid
 
 
@@ -63,7 +71,9 @@ def _insert_bronze_post(
     defaults.update(overrides)
     cols = ", ".join(defaults.keys())
     placeholders = ", ".join("?" for _ in defaults)
-    conn.execute(f"INSERT INTO bronze.bronze_posts ({cols}) VALUES ({placeholders})", list(defaults.values()))
+    conn.execute(
+        f"INSERT INTO bronze.bronze_posts ({cols}) VALUES ({placeholders})", list(defaults.values())
+    )
     return pid
 
 
@@ -79,7 +89,10 @@ def _insert_gold_post_search(conn: duckdb.DuckDBPyConnection, **overrides: objec
     defaults.update(overrides)
     cols = ", ".join(defaults.keys())
     placeholders = ", ".join("?" for _ in defaults)
-    conn.execute(f"INSERT INTO gold.gold_post_search ({cols}) VALUES ({placeholders})", list(defaults.values()))
+    conn.execute(
+        f"INSERT INTO gold.gold_post_search ({cols}) VALUES ({placeholders})",
+        list(defaults.values()),
+    )
     return gid
 
 

@@ -65,6 +65,9 @@ dev = [
 
     # E2E Testing
     "playwright>=1.46.0",
+
+    # Security
+    "pip-audit>=2.7.0",
 ]
 
 [project.scripts]
@@ -73,6 +76,7 @@ socialpulse-crawl = "src.infrastructure.crawling.cli:main"
 socialpulse-enrich = "src.application.use_cases.run_enrichment:cli_main"
 socialpulse-gold = "src.application.use_cases.build_gold:cli_main"
 socialpulse-purge = "src.infrastructure.crawling.purge:main"
+socialpulse-backup = "src.shared.backup:main"
 
 [build-system]
 requires = ["hatchling"]

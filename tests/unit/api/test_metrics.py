@@ -83,11 +83,18 @@ class TestGetSnapshot:
         collector.reset()
         snapshot = collector.get_snapshot()
         expected_keys = {
-            "crawls_started", "crawls_completed", "crawls_failed",
+            "crawls_started",
+            "crawls_completed",
+            "crawls_failed",
             "posts_fetched",
-            "enrichments_started", "enrichments_completed", "enrichments_failed",
-            "gold_builds_started", "gold_builds_completed", "gold_builds_failed",
-            "api_requests_total", "api_requests_errors",
+            "enrichments_started",
+            "enrichments_completed",
+            "enrichments_failed",
+            "gold_builds_started",
+            "gold_builds_completed",
+            "gold_builds_failed",
+            "api_requests_total",
+            "api_requests_errors",
         }
         assert set(snapshot["counters"].keys()) == expected_keys
 

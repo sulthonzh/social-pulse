@@ -59,9 +59,7 @@ class DataRetentionService:
         )
         return results
 
-    def _purge_table(
-        self, table: str, ts_col: str, cutoff: datetime, dry_run: bool
-    ) -> int:
+    def _purge_table(self, table: str, ts_col: str, cutoff: datetime, dry_run: bool) -> int:
         row = self._conn.execute(
             f"SELECT COUNT(*) FROM {table} WHERE {ts_col} < ?",
             [cutoff],
