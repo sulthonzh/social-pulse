@@ -29,7 +29,7 @@ def render() -> None:
         repo = DuckDBGoldPostSearchRepository(conn)
         campaigns_uc = GetCampaigns(repo)
         campaigns: list[dict[str, Any]] = campaigns_uc.execute()
-    except Exception:
+    except SocialPulseError:
         campaigns = []
 
     if not campaigns:

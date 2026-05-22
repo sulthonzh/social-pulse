@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 from src.application.use_cases.enrich_post import EnrichPostUseCase
 from src.domain.entities.raw_post import RawPost
+from src.domain.exceptions import EnrichmentError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.ai.language_detector import LinguaLanguageDetector
 from src.infrastructure.ai.openai_client import OpenAIClient
@@ -175,7 +176,7 @@ class AIEnrichmentWorker:
         try:
             await self._use_case.execute(raw_post)
             logger.info("job_completed", raw_post_id=post_id)
-        except Exception:
+        except EnrichmentError:
             logger.exception("job_failed", raw_post_id=post_id)
 
     async def _run_once(self) -> int:

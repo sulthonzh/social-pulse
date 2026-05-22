@@ -13,6 +13,7 @@ from src.application.use_cases.build_post_search import BuildPostSearch
 from src.application.use_cases.enrich_post import EnrichPostUseCase
 from src.application.use_cases.ingest_crawl import IngestCrawlRun
 from src.application.use_cases.search_posts import SearchPosts
+from src.domain.exceptions import EnrichmentError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.crawling import create_crawler
 from src.infrastructure.persistence.duckdb_ai_enrichment_repository import (
@@ -288,7 +289,7 @@ class IngestPipeline:
             try:
                 await self._enrich_post.execute(raw_post)
                 enriched_count += 1
-            except Exception:
+            except EnrichmentError:
                 logger.exception(
                     "pipeline_enrich_post_failed",
                     raw_post_id=str(raw_post.id),
