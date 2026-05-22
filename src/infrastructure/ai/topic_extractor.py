@@ -36,6 +36,9 @@ class KeyBERTTopicExtractor:
             self._kw_model = KeyBERT(self._model_name)
         return self._kw_model
 
+    def cleanup(self) -> None:
+        self._kw_model = None
+
     def _get_model_version(self) -> str:
         """Extract model version identifier from model name."""
         if "/" in self._model_name:

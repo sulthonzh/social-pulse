@@ -98,45 +98,52 @@ class GoldBuilder:
             )
 
             rid = str(request_id)
-            last_build = self._tracking_repo.get_last_build(rid)
+            self._conn.execute("BEGIN TRANSACTION")
+            try:
+                last_build = self._tracking_repo.get_last_build(rid)
 
-            if last_build is not None:
-                logger.info(
-                    "incremental_build",
-                    search_request_id=rid,
-                    last_build=last_build.isoformat(),
-                )
-                new_posts = self._enriched_post_repo.get_enriched_since(rid, last_build)
-
-                if not new_posts:
+                if last_build is not None:
                     logger.info(
-                        "build_skipped_no_new_posts",
+                        "incremental_build",
+                        search_request_id=rid,
+                        last_build=last_build.isoformat(),
+                    )
+                    new_posts = self._enriched_post_repo.get_enriched_since(rid, last_build)
+
+                    if not new_posts:
+                        logger.info(
+                            "build_skipped_no_new_posts",
+                            search_request_id=rid,
+                        )
+                        self._conn.execute("ROLLBACK")
+                        continue
+
+                    self._gold_post_search_repo.delete_by_search_request(rid)
+                    self._gold_daily_repo.delete_by_search_request(rid)
+
+                    posts_processed = await self._build_post_search.execute(
+                        rid, keyword, since=last_build
+                    )
+                else:
+                    logger.info(
+                        "full_build",
                         search_request_id=rid,
                     )
-                    continue
 
-                self._gold_post_search_repo.delete_by_search_request(rid)
-                self._gold_daily_repo.delete_by_search_request(rid)
+                    posts_processed = await self._build_post_search.execute(rid, keyword)
 
-                posts_processed = await self._build_post_search.execute(
-                    rid, keyword, since=last_build
-                )
-            else:
-                logger.info(
-                    "full_build",
-                    search_request_id=rid,
+                await self._build_campaign_daily.execute(rid)
+                await self._build_campaign_summary.execute(
+                    rid,
+                    start_date if isinstance(start_date, date) else date.fromisoformat(str(start_date)),
+                    end_date if isinstance(end_date, date) else date.fromisoformat(str(end_date)),
                 )
 
-                posts_processed = await self._build_post_search.execute(rid, keyword)
-
-            await self._build_campaign_daily.execute(rid)
-            await self._build_campaign_summary.execute(
-                rid,
-                start_date if isinstance(start_date, date) else date.fromisoformat(str(start_date)),
-                end_date if isinstance(end_date, date) else date.fromisoformat(str(end_date)),
-            )
-
-            self._tracking_repo.record_build(rid, posts_processed)
+                self._tracking_repo.record_build(rid, posts_processed)
+                self._conn.execute("COMMIT")
+            except Exception:
+                self._conn.execute("ROLLBACK")
+                raise
 
             logger.info(
                 "build_completed",

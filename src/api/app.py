@@ -130,8 +130,8 @@ async def _run_pipeline(
                 stage=PipelineStage.ERROR,
                 current=0,
                 total=0,
-                message=f"Pipeline failed: {exc}",
-                data={"error": str(exc)},
+                message="Pipeline failed",
+                data={"error": "Internal error"},
             )
         )
     finally:

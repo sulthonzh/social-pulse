@@ -60,7 +60,7 @@ class OpenAILanguageDetector:
             logger.warning("openai_language_empty_response")
             return _UNKNOWN_RESULT
 
-        result = _parse_response(data, self._client._model)
+        result = _parse_response(data, self._client.model_name)
         logger.debug(
             "language_detected",
             language_code=result.language_code,
