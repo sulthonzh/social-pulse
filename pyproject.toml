@@ -12,13 +12,6 @@ dependencies = [
     "duckdb>=1.1.0",
     "polars>=1.0.0",
 
-    # AI/NLP
-    "transformers>=4.45.0",
-    "torch>=2.4.0",
-    "lingua-language-detector>=2.0.0",
-    "keybert>=0.8.0",
-    "sentence-transformers>=3.0.0",
-
     # LLM API
     "openai>=1.0.0",
 
@@ -45,6 +38,13 @@ dependencies = [
 [project.optional-dependencies]
 dbt = [
     "dbt-duckdb>=1.10.0",
+]
+ml = [
+    "transformers>=4.45.0",
+    "torch>=2.4.0",
+    "lingua-language-detector>=2.0.0",
+    "keybert>=0.8.0",
+    "sentence-transformers>=3.0.0",
 ]
 dev = [
     # Testing
