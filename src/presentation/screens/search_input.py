@@ -4,17 +4,18 @@ import subprocess
 import time
 from datetime import date, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 import streamlit as st
 
+from src.application.use_cases.list_search_requests import ListSearchRequests
 from src.domain.exceptions import SocialPulseError
 from src.domain.value_objects.platform import Platform
+from src.infrastructure.persistence.duckdb_search_request_repository import (
+    DuckDBSearchRequestRepository,
+)
 from src.shared.config import get_db_connection
-
-if TYPE_CHECKING:
-    import duckdb
 
 # In Docker, services talk via service names; locally it's localhost
 _API_BASE = "http://api:8000" if Path("/.dockerenv").exists() else "http://localhost:8000"
@@ -56,35 +57,6 @@ def _ensure_api_server() -> bool:
             return True
         time.sleep(0.5)
     return False
-
-
-def _get_conn() -> duckdb.DuckDBPyConnection:
-    return get_db_connection()
-
-
-def _get_recent_requests(conn: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
-    rows = conn.execute(
-        """
-        SELECT id, keyword, platform, start_date, end_date,
-               status, posts_found, created_at
-        FROM bronze.search_requests
-        ORDER BY created_at DESC
-        LIMIT 20
-        """
-    ).fetchall()
-    return [
-        {
-            "id": str(r[0]),
-            "keyword": r[1],
-            "platform": r[2],
-            "start_date": str(r[3]),
-            "end_date": str(r[4]),
-            "status": r[5],
-            "posts_found": r[6],
-            "created_at": str(r[7]),
-        }
-        for r in rows
-    ]
 
 
 def _handle_submission(
@@ -173,8 +145,10 @@ def render() -> None:
     st.subheader("Recent Search Requests")
 
     try:
-        conn = _get_conn()
-        requests = _get_recent_requests(conn)
+        conn = get_db_connection(read_only=True)
+        repo = DuckDBSearchRequestRepository(conn)
+        use_case = ListSearchRequests(repo)
+        requests = use_case.execute(limit=20)
         conn.close()
     except Exception:
         requests = []
@@ -188,9 +162,9 @@ def render() -> None:
                 "running": "Running",
                 "pending": "Pending",
                 "failed": "Failed",
-            }.get(req["status"], "Unknown")
+            }.get(req.status.value, "Unknown")
             st.markdown(
-                f"**{req['keyword']}** | {req['platform']} | "
-                f"{req['start_date']} to {req['end_date']} | "
-                f"{req['posts_found']} posts | {status_label}"
+                f"**{req.keyword}** | {req.platform.value} | "
+                f"{req.start_date} to {req.end_date} | "
+                f"{req.posts_found} posts | {status_label}"
             )
