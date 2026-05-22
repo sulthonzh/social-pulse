@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     topic_model: str = "all-MiniLM-L6-v2"
 
     ai_provider: str = "local"  # "local" or "openai"
+    sentiment_provider: str = ""  # "" = use ai_provider default
+    topic_provider: str = ""  # "" = use ai_provider default
+    language_provider: str = ""  # "" = use ai_provider default
     openai_api_key: str = ""
     openai_base_url: str = "https://api.z.ai/api/coding/paas/v4"
     openai_model: str = "glm-4.7"
@@ -33,6 +36,11 @@ class Settings(BaseSettings):
     ai_max_retries: int = 3
     gold_rebuild_batch_size: int = 10000
     retention_days: int = 90
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_cooldown_seconds: int = 60
+
+    api_key: str = ""
+    rate_limit_per_minute: int = 60
 
 
 settings = Settings()

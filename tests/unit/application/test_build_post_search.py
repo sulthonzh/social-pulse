@@ -138,9 +138,7 @@ class TestBuildPostSearch:
         ai_repo.get_by_posts.return_value = {str(post.id): enrichment}
         gold_repo.save_batch.return_value = 1
 
-        result = await use_case.execute(
-            str(search_request_id), keyword="python", since=since
-        )
+        result = await use_case.execute(str(search_request_id), keyword="python", since=since)
 
         assert result == 1
         enriched_repo.get_enriched_since_paginated.assert_called_once_with(
@@ -157,9 +155,7 @@ class TestBuildPostSearch:
 
         enriched_repo.get_enriched_since_paginated.return_value = []
 
-        result = await use_case.execute(
-            str(uuid4()), keyword="python", since=since
-        )
+        result = await use_case.execute(str(uuid4()), keyword="python", since=since)
 
         assert result == 0
         enriched_repo.get_enriched_since_paginated.assert_called_once()
@@ -187,7 +183,9 @@ class TestBuildPostSearch:
     async def test_execute_loops_over_multiple_batches(self):
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
-        full_batch = [_make_enriched_post(search_request_id=search_request_id) for _ in range(BATCH_SIZE)]
+        full_batch = [
+            _make_enriched_post(search_request_id=search_request_id) for _ in range(BATCH_SIZE)
+        ]
         partial_batch = [_make_enriched_post(search_request_id=search_request_id) for _ in range(3)]
 
         enriched_repo.get_by_search_paginated.side_effect = [full_batch, partial_batch]
@@ -203,7 +201,9 @@ class TestBuildPostSearch:
     async def test_execute_loops_correctly_with_batch_size_posts(self):
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
-        full_batch = [_make_enriched_post(search_request_id=search_request_id) for _ in range(BATCH_SIZE)]
+        full_batch = [
+            _make_enriched_post(search_request_id=search_request_id) for _ in range(BATCH_SIZE)
+        ]
         partial_batch = [_make_enriched_post(search_request_id=search_request_id) for _ in range(5)]
 
         enriched_repo.get_by_search_paginated.side_effect = [full_batch, partial_batch]

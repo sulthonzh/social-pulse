@@ -43,6 +43,7 @@ from src.infrastructure.persistence.duckdb_post_repository import (
     DuckDBPostRepository,
 )
 from src.infrastructure.persistence.migrations import create_all_tables
+from src.shared.circuit_breaker import CircuitBreaker, CircuitOpenError
 from src.shared.config import settings
 
 if TYPE_CHECKING:
@@ -56,6 +57,11 @@ logger = structlog.get_logger()
 
 _POLL_INTERVAL_SECONDS: int = 30
 _BATCH_SIZE: int = 100
+
+
+def _resolve_provider(feature_override: str) -> str:
+    return feature_override if feature_override else settings.ai_provider
+
 
 _UNENRICHED_SQL = """
     SELECT bp.id,
@@ -122,44 +128,56 @@ class AIEnrichmentWorker:
     def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
         self._conn = conn
         self._shutdown_event = asyncio.Event()
+        self._circuit_breaker = CircuitBreaker(
+            failure_threshold=settings.circuit_breaker_failure_threshold,
+            cooldown_seconds=settings.circuit_breaker_cooldown_seconds,
+            name="ai_enrichment",
+        )
 
         DuckDBPostRepository(conn)
         enriched_post_repo = DuckDBEnrichedPostRepository(conn)
         ai_enrichment_repo = DuckDBAIEnrichmentRepository(conn)
         ai_job_repo = DuckDBAIJobRepository(conn)
 
-        sentiment_analyzer: SentimentAnalyzer
-        topic_extractor: TopicExtractor
-        language_detector: LanguageDetector
+        sentiment_provider = _resolve_provider(settings.sentiment_provider)
+        topic_provider = _resolve_provider(settings.topic_provider)
+        language_provider = _resolve_provider(settings.language_provider)
 
-        if settings.ai_provider == "openai":
-            openai_client = OpenAIClient(
-                api_key=settings.openai_api_key,
-                base_url=settings.openai_base_url,
-                model=settings.openai_model,
-            )
-            sentiment_analyzer = OpenAISentimentAnalyzer(openai_client)
-            topic_extractor = OpenAITopicExtractor(openai_client)
-            language_detector = OpenAILanguageDetector(openai_client)
-            logger.info("worker_using_openai", model=settings.openai_model)
-        else:
-            sentiment_analyzer = TransformerSentimentAnalyzer(
-                model_name=settings.sentiment_model,
-            )
-            topic_extractor = KeyBERTTopicExtractor(
-                model_name=settings.topic_model,
-            )
-            language_detector = LinguaLanguageDetector()
-            logger.info("worker_using_local")
+        self._sentiment_analyzer = self._create_sentiment_analyzer(sentiment_provider)
+        self._topic_extractor = self._create_topic_extractor(topic_provider)
+        self._language_detector = self._create_language_detector(language_provider)
 
         self._use_case = EnrichPostUseCase(
-            sentiment_analyzer=sentiment_analyzer,
-            topic_extractor=topic_extractor,
-            language_detector=language_detector,
+            sentiment_analyzer=self._sentiment_analyzer,
+            topic_extractor=self._topic_extractor,
+            language_detector=self._language_detector,
             enriched_post_repo=enriched_post_repo,
             ai_enrichment_repo=ai_enrichment_repo,
             ai_job_repo=ai_job_repo,
         )
+
+    @staticmethod
+    def _get_openai_client() -> OpenAIClient:
+        return OpenAIClient(
+            api_key=settings.openai_api_key,
+            base_url=settings.openai_base_url,
+            model=settings.openai_model,
+        )
+
+    def _create_sentiment_analyzer(self, provider: str) -> SentimentAnalyzer:
+        if provider == "openai":
+            return OpenAISentimentAnalyzer(self._get_openai_client())
+        return TransformerSentimentAnalyzer(model_name=settings.sentiment_model)
+
+    def _create_topic_extractor(self, provider: str) -> TopicExtractor:
+        if provider == "openai":
+            return OpenAITopicExtractor(self._get_openai_client())
+        return KeyBERTTopicExtractor(model_name=settings.topic_model)
+
+    def _create_language_detector(self, provider: str) -> LanguageDetector:
+        if provider == "openai":
+            return OpenAILanguageDetector(self._get_openai_client())
+        return LinguaLanguageDetector()
 
     def _fetch_unenriched_posts(self) -> list[RawPost]:
         """Find bronze posts that have no corresponding silver record."""
@@ -170,12 +188,13 @@ class AIEnrichmentWorker:
         return [_row_to_raw_post(row) for row in rows]
 
     async def _process_post(self, raw_post: RawPost) -> None:
-        """Run enrichment for a single post, catching errors."""
         post_id = str(raw_post.id)
         logger.info("job_processing", raw_post_id=post_id)
         try:
-            await self._use_case.execute(raw_post)
+            await self._circuit_breaker.call(self._use_case.execute, raw_post)
             logger.info("job_completed", raw_post_id=post_id)
+        except CircuitOpenError:
+            logger.warning("job_skipped_circuit_open", raw_post_id=post_id)
         except EnrichmentError:
             logger.exception("job_failed", raw_post_id=post_id)
 
@@ -191,6 +210,11 @@ class AIEnrichmentWorker:
                 break
             await self._process_post(raw_post)
         return len(posts)
+
+    def _cleanup(self) -> None:
+        for adapter in (self._topic_extractor, self._language_detector):
+            if hasattr(adapter, "cleanup"):
+                adapter.cleanup()
 
     async def run_forever(self) -> None:
         """Main loop: poll, process, sleep, repeat until shutdown."""
@@ -208,6 +232,7 @@ class AIEnrichmentWorker:
                         timeout=_POLL_INTERVAL_SECONDS,
                     )
         logger.info("worker_stopped")
+        self._cleanup()
 
     def request_shutdown(self) -> None:
         """Signal the worker to stop after current work completes."""

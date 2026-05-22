@@ -238,8 +238,12 @@ class TestDuckDBAIJobRepository:
     def test_reset_failed_jobs_filters_by_type(self, db_with_schema):
         post = _insert_silver_post(db_with_schema)
         repo = DuckDBAIJobRepository(db_with_schema)
-        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT))
-        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT))
+        repo.save(
+            _make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT)
+        )
+        repo.save(
+            _make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT)
+        )
         repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.SENTIMENT))
 
         result = repo.reset_failed_jobs(job_type="full_enrichment")
