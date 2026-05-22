@@ -41,10 +41,12 @@ class TestPlatformStrEnumBehavior:
 
     def test_iteration(self) -> None:
         members = list(Platform)
-        assert len(members) == 3
+        assert len(members) == 5
         assert Platform.TWITTER in members
         assert Platform.FACEBOOK in members
         assert Platform.INSTAGRAM in members
+        assert Platform.YOUTUBE in members
+        assert Platform.REDDIT in members
 
     def test_invalid_value_raises(self) -> None:
         with pytest.raises(ValueError):

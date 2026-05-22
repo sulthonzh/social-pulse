@@ -2691,6 +2691,9 @@ requires-dist = [
 ]
 provides-extras = ["dbt", "dev"]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "sqlparse"
 version = "0.5.5"
