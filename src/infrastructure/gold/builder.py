@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 
 import structlog
 
+if TYPE_CHECKING:
+    import duckdb
+
 from src.application.use_cases.build_campaign_daily import BuildCampaignDaily
 from src.application.use_cases.build_campaign_summary import BuildCampaignSummary
 from src.application.use_cases.build_post_search import BuildPostSearch
@@ -26,9 +29,6 @@ from src.infrastructure.persistence.duckdb_gold_post_search_repository import (
 )
 from src.infrastructure.persistence.migrations import create_all_tables
 from src.shared.config import settings
-
-if TYPE_CHECKING:
-    import duckdb
 
 logger = structlog.get_logger(__name__)
 
@@ -112,30 +112,9 @@ class GoldBuilder:
 
 
 async def run() -> None:
-    import time  # noqa: PLC0415
+    from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
 
-    import duckdb  # noqa: PLC0415
-
-    max_retries = 5
-    base_delay = 2.0
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            conn = duckdb.connect(settings.db_path)
-            break
-        except duckdb.IOException as exc:
-            if "lock" not in str(exc).lower() or attempt == max_retries:
-                raise
-            delay = base_delay * (2 ** (attempt - 1))
-            logger.warning(
-                "db_locked_retry",
-                attempt=attempt,
-                max_retries=max_retries,
-                delay=delay,
-            )
-            time.sleep(delay)
-    else:
-        raise RuntimeError("Failed to acquire DuckDB lock after retries")
+    conn: duckdb.DuckDBPyConnection = connect_with_retry()
 
     try:
         builder = GoldBuilder(conn)

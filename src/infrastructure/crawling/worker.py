@@ -13,9 +13,9 @@ import asyncio
 import contextlib
 import signal
 from datetime import date, datetime
-from typing import TYPE_CHECKING
 from uuid import UUID
 
+import duckdb  # noqa: TC002
 import structlog
 
 from src.application.use_cases.ingest_crawl import IngestCrawlRun
@@ -31,10 +31,6 @@ from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
 )
 from src.infrastructure.persistence.migrations import create_all_tables
-from src.shared.config import settings
-
-if TYPE_CHECKING:
-    import duckdb
 
 logger = structlog.get_logger()
 
@@ -148,9 +144,9 @@ class CrawlWorker:
         Opens a connection, processes pending requests, then closes it
         to release the DuckDB write lock before sleeping.
         """
-        import duckdb  # noqa: PLC0415
+        from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
 
-        conn = duckdb.connect(settings.db_path)
+        conn = connect_with_retry()
         try:
             requests = self._fetch_pending_requests(conn)
             if not requests:
@@ -208,30 +204,9 @@ async def main() -> None:
     Retries with exponential backoff when the database is locked
     by another process (e.g., the Streamlit app).
     """
-    import time  # noqa: PLC0415
+    from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
 
-    import duckdb  # noqa: PLC0415
-
-    max_retries = 5
-    base_delay = 2.0
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            conn = duckdb.connect(settings.db_path)
-            break
-        except duckdb.IOException as exc:
-            if "lock" not in str(exc).lower() or attempt == max_retries:
-                raise
-            delay = base_delay * (2 ** (attempt - 1))
-            logger.warning(
-                "db_locked_retry",
-                attempt=attempt,
-                max_retries=max_retries,
-                delay=delay,
-            )
-            time.sleep(delay)
-    else:
-        raise RuntimeError("Failed to acquire DuckDB lock after retries")
+    conn: duckdb.DuckDBPyConnection = connect_with_retry()
 
     try:
         await run(conn)
