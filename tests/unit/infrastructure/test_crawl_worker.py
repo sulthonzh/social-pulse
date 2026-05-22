@@ -136,11 +136,12 @@ class TestCrawlWorkerProcessRequest:
         use_case = _mock_use_case(return_value=crawl_run)
         conn = _mock_conn_with_rows([])
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -156,11 +157,12 @@ class TestCrawlWorkerProcessRequest:
         use_case.execute.side_effect = RuntimeError("Crawl API down")
         conn = _mock_conn_with_rows([])
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -177,13 +179,13 @@ class TestCrawlWorkerRunOnce:
         conn = _mock_conn_with_rows([_make_row(r1), _make_row(r2)])
         use_case = _mock_use_case()
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
-        ), patch(
-            "duckdb.connect", return_value=conn
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
+            patch("duckdb.connect", return_value=conn),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -196,13 +198,13 @@ class TestCrawlWorkerRunOnce:
         conn = _mock_conn_with_rows([])
         use_case = _mock_use_case()
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
-        ), patch(
-            "duckdb.connect", return_value=conn
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
+            patch("duckdb.connect", return_value=conn),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -217,13 +219,13 @@ class TestCrawlWorkerRunOnce:
         conn = _mock_conn_with_rows([_make_row(r1), _make_row(r2)])
         use_case = _mock_use_case()
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
-        ), patch(
-            "duckdb.connect", return_value=conn
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
+            patch("duckdb.connect", return_value=conn),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -240,13 +242,13 @@ class TestCrawlWorkerShutdown:
         conn = _mock_conn_with_rows([])
         use_case = _mock_use_case()
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
-        ), patch(
-            "duckdb.connect", return_value=conn
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
+            patch("duckdb.connect", return_value=conn),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
@@ -260,13 +262,13 @@ class TestCrawlWorkerShutdown:
         conn = _mock_conn_with_rows([])
         use_case = _mock_use_case()
 
-        with patch(
-            "src.infrastructure.crawling.worker.create_crawler"
-        ) as mock_crawler, patch(
-            "src.infrastructure.crawling.worker.IngestCrawlRun",
-            return_value=use_case,
-        ), patch(
-            "duckdb.connect", return_value=conn
+        with (
+            patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler,
+            patch(
+                "src.infrastructure.crawling.worker.IngestCrawlRun",
+                return_value=use_case,
+            ),
+            patch("duckdb.connect", return_value=conn),
         ):
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()

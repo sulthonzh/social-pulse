@@ -67,7 +67,10 @@ class EnrichPostUseCase:
             platform=raw_post.platform,
             platform_id=raw_post.platform_id,
             author_handle=raw_post.author_handle,
-            author_name=payload.get("author_name") or payload.get("author") or payload.get("channel") or payload.get("uploader"),
+            author_name=payload.get("author_name")
+            or payload.get("author")
+            or payload.get("channel")
+            or payload.get("uploader"),
             post_text=text,
             posted_at=self._parse_datetime(
                 payload.get("posted_at")
@@ -243,7 +246,9 @@ class EnrichPostUseCase:
                 return None
             if len(value) == 8 and value.isdigit():  # noqa: PLR2004
                 return datetime(
-                    int(value[:4]), int(value[4:6]), int(value[6:8]),
+                    int(value[:4]),
+                    int(value[4:6]),
+                    int(value[6:8]),
                     tzinfo=UTC,
                 )
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
