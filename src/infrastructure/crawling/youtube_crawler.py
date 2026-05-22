@@ -10,16 +10,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import uuid4
 
 from src.domain.entities.raw_post import RawPost
 from src.domain.exceptions import CrawlError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.crawling.base import BaseCrawler
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +31,7 @@ def _extract_metadata(info: dict[str, Any]) -> dict[str, Any]:
     webpage_url = info.get("webpage_url", info.get("original_url", ""))
 
     posted_at_iso = ""
-    if upload_date_str and len(upload_date_str) == 8:
+    if upload_date_str and len(upload_date_str) == 8:  # noqa: PLR2004
         posted_at_iso = (
             f"{upload_date_str[:4]}-{upload_date_str[4:6]}-{upload_date_str[6:8]}T00:00:00+00:00"
         )
@@ -69,7 +66,7 @@ def _extract_metadata(info: dict[str, Any]) -> dict[str, Any]:
 
 def _parse_upload_date(upload_date_str: str) -> date | None:
     """Parse yt-dlp upload_date string (YYYYMMDD) to date."""
-    if not upload_date_str or len(upload_date_str) != 8:
+    if not upload_date_str or len(upload_date_str) != 8:  # noqa: PLR2004
         return None
     try:
         return date(
@@ -159,7 +156,7 @@ class YouTubeCrawler(BaseCrawler):
         Phase 2: Per-video extraction to get full metadata including upload_date.
         Flat mode omits upload_date, so we must extract each video individually.
         """
-        import yt_dlp  # type: ignore[import-untyped]
+        import yt_dlp  # noqa: PLC0415
 
         search_query = f"ytsearch{limit}:{keyword}"
         with yt_dlp.YoutubeDL(self._flat_opts) as ydl:

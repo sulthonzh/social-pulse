@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, date, datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -17,9 +17,6 @@ from src.domain.entities.raw_post import RawPost
 from src.domain.exceptions import CrawlError
 from src.domain.value_objects.platform import Platform
 from src.infrastructure.crawling.base import BaseCrawler
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +162,7 @@ class RedditCrawler(BaseCrawler):
             response = await client.get("/search.json", params=params)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 429:
+            if exc.response.status_code == 429:  # noqa: PLR2004
                 logger.warning("Reddit rate limited — slowing down")
             logger.error(
                 "Reddit API error: status=%s body=%s",
@@ -177,8 +174,8 @@ class RedditCrawler(BaseCrawler):
             logger.error("Reddit request failed: %s", exc)
             raise CrawlError(f"Reddit request failed: {exc}") from exc
 
-        data = response.json()
-        return data.get("data", {}).get("children", [])
+        data: dict[str, Any] = response.json()
+        return list(data.get("data", {}).get("children", []))
 
     async def health_check(self) -> bool:
         """Check if Reddit's public JSON API is reachable."""
@@ -189,7 +186,7 @@ class RedditCrawler(BaseCrawler):
                 timeout=10,
             ) as client:
                 response = await client.get("/search.json", params={"q": "test", "limit": 1})
-                return response.status_code == 200
+                return response.status_code == 200  # noqa: PLR2004
         except httpx.RequestError:
             logger.warning("Reddit health check failed")
             return False

@@ -229,7 +229,7 @@ class EnrichPostUseCase:
         return combined if combined else ""
 
     @staticmethod
-    def _parse_datetime(value: Any) -> datetime | None:
+    def _parse_datetime(value: Any) -> datetime | None:  # noqa: PLR0911
         if value is None:
             return None
         if isinstance(value, datetime):
@@ -241,7 +241,7 @@ class EnrichPostUseCase:
         if isinstance(value, str):
             if not value:
                 return None
-            if len(value) == 8 and value.isdigit():
+            if len(value) == 8 and value.isdigit():  # noqa: PLR2004
                 return datetime(
                     int(value[:4]), int(value[4:6]), int(value[6:8]),
                     tzinfo=UTC,
