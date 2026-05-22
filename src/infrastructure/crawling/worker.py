@@ -115,9 +115,16 @@ class CrawlWorker:
         rows = conn.execute(_PENDING_SQL, [_BATCH_SIZE]).fetchall()
         return [_row_to_search_request(row) for row in rows]
 
-    async def _process_request(self, request: SearchRequest, conn: duckdb.DuckDBPyConnection) -> None:
+    async def _process_request(
+        self, request: SearchRequest, conn: duckdb.DuckDBPyConnection
+    ) -> None:
         request_id = str(request.id)
-        logger.info("crawl_job_processing", request_id=request_id, keyword=request.keyword, platform=request.platform)
+        logger.info(
+            "crawl_job_processing",
+            request_id=request_id,
+            keyword=request.keyword,
+            platform=request.platform,
+        )
         try:
             use_case = IngestCrawlRun(
                 search_request_repo=DuckDBSearchRequestRepository(conn),

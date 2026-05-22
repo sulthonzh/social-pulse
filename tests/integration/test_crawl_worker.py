@@ -66,10 +66,14 @@ async def test_worker_processes_request_end_to_end(db_with_schema):
 
     mock_crawler = MagicMock()
 
-    with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
-        "src.infrastructure.crawling.worker.IngestCrawlRun",
-        return_value=use_case,
-    ), patch("duckdb.connect", return_value=db_with_schema):
+    with (
+        patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn,
+        patch(
+            "src.infrastructure.crawling.worker.IngestCrawlRun",
+            return_value=use_case,
+        ),
+        patch("duckdb.connect", return_value=db_with_schema),
+    ):
         mock_crawler_fn.return_value = mock_crawler
 
         worker = CrawlWorker()
@@ -105,10 +109,14 @@ async def test_worker_handles_multiple_pending_requests(db_with_schema):
 
     mock_crawler = MagicMock()
 
-    with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
-        "src.infrastructure.crawling.worker.IngestCrawlRun",
-        return_value=use_case,
-    ), patch("duckdb.connect", return_value=db_with_schema):
+    with (
+        patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn,
+        patch(
+            "src.infrastructure.crawling.worker.IngestCrawlRun",
+            return_value=use_case,
+        ),
+        patch("duckdb.connect", return_value=db_with_schema),
+    ):
         mock_crawler_fn.return_value = mock_crawler
 
         worker = CrawlWorker()
