@@ -17,10 +17,13 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from src.api.events import EventBus, PipelineEvent, PipelineStage, event_bus
+from src.api.metrics import MetricsResponse, metrics
 from src.shared.config import settings
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+
+HTTP_ERROR_THRESHOLD = 400
 
 logger = structlog.get_logger(__name__)
 
@@ -85,6 +88,7 @@ async def _run_pipeline(
 
     conn: duckdb.DuckDBPyConnection | None = None
     try:
+        metrics.increment("crawls_started")
         conn = duckdb.connect(settings.db_path)
         pipeline = IngestPipeline(conn, progress_callback=on_progress)
         result = await pipeline.execute(
@@ -93,6 +97,11 @@ async def _run_pipeline(
             start_date=start_date,
             end_date=end_date,
         )
+
+        metrics.increment("crawls_completed")
+        metrics.increment("posts_fetched", result.posts_crawled)
+        metrics.increment("enrichments_completed")
+        metrics.increment("gold_builds_completed")
 
         bus.publish(
             PipelineEvent(
@@ -112,6 +121,8 @@ async def _run_pipeline(
         logger.info("pipeline_run_complete", run_id=run_id, result=repr(result))
 
     except Exception as exc:
+        metrics.increment("crawls_failed")
+        metrics.record_error(type(exc).__name__)
         logger.exception("pipeline_run_failed", run_id=run_id, error=str(exc))
         bus.publish(
             PipelineEvent(
@@ -180,6 +191,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+@app.middleware("http")
+async def metrics_middleware(request: Any, call_next: Any) -> Any:
+    metrics.increment("api_requests_total")
+    response = await call_next(request)
+    if response.status_code >= HTTP_ERROR_THRESHOLD:
+        metrics.increment("api_requests_errors")
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
@@ -191,11 +212,28 @@ app.add_middleware(
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
+    db_ok = False
+    try:
+        import duckdb  # noqa: PLC0415
+
+        conn = duckdb.connect(settings.db_path, read_only=True)
+        conn.execute("SELECT 1").fetchone()
+        conn.close()
+        db_ok = True
+    except Exception:
+        logger.debug("health_db_check_failed", exc_info=True)
+
     return HealthResponse(
-        status="ok",
+        status="ok" if db_ok else "degraded",
         db_path=settings.db_path,
         env=settings.env,
     )
+
+
+@app.get("/api/metrics", response_model=MetricsResponse)
+async def get_metrics() -> MetricsResponse:
+    snapshot = metrics.get_snapshot()
+    return MetricsResponse(**snapshot)
 
 
 @app.post("/api/pipeline/start", response_model=PipelineStartResponse)
