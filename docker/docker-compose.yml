@@ -1,0 +1,234 @@
+# ============================================================
+# SocialPulse — DuckDB-Only Docker Compose
+#
+# Usage:
+#   docker compose up -d app              # Start app
+#   docker compose up -d api              # Start API server
+#   docker compose run --rm test           # Run tests
+#   docker compose run --rm lint           # Run linting
+#   docker compose --profile pipeline up -d  # Start with workers + gold-builder + dbt
+#   docker compose --profile dbt-docs up dbt-docs  # Serve dbt docs on :8585
+# ============================================================
+
+name: socialpulse
+
+services:
+  # ============================================================
+  # Application Services
+  # ============================================================
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: socialpulse-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
+      - ../scripts:/app/scripts
+      - ../.streamlit:/app/.streamlit
+      - ../data:/app/data
+      - model-cache:/app/models
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_HF_MODEL_CACHE_DIR=${SOCIALPULSE_HF_MODEL_CACHE_DIR:-/app/models}
+      - SOCIALPULSE_SENTIMENT_MODEL=${SOCIALPULSE_SENTIMENT_MODEL:-cardiffnlp/twitter-roberta-base-sentiment-latest}
+      - SOCIALPULSE_TOPIC_MODEL=${SOCIALPULSE_TOPIC_MODEL:-all-MiniLM-L6-v2}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - socialpulse
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: api
+    container_name: socialpulse-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
+      - ../data:/app/data
+      - model-cache:/app/models
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_HF_MODEL_CACHE_DIR=${SOCIALPULSE_HF_MODEL_CACHE_DIR:-/app/models}
+      - SOCIALPULSE_SENTIMENT_MODEL=${SOCIALPULSE_SENTIMENT_MODEL:-cardiffnlp/twitter-roberta-base-sentiment-latest}
+      - SOCIALPULSE_TOPIC_MODEL=${SOCIALPULSE_TOPIC_MODEL:-all-MiniLM-L6-v2}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - socialpulse
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: worker
+    container_name: socialpulse-worker
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+      - model-cache:/app/models
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_HF_MODEL_CACHE_DIR=${SOCIALPULSE_HF_MODEL_CACHE_DIR:-/app/models}
+      - SOCIALPULSE_SENTIMENT_MODEL=${SOCIALPULSE_SENTIMENT_MODEL:-cardiffnlp/twitter-roberta-base-sentiment-latest}
+      - SOCIALPULSE_TOPIC_MODEL=${SOCIALPULSE_TOPIC_MODEL:-all-MiniLM-L6-v2}
+      - SOCIALPULSE_AI_MAX_RETRIES=${SOCIALPULSE_AI_MAX_RETRIES:-3}
+    restart: unless-stopped
+    profiles:
+      - pipeline
+    networks:
+      - socialpulse
+
+  crawl-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: crawl-worker
+    container_name: socialpulse-crawl-worker
+    volumes:
+      - ../src:/app/src
+      - ../pyproject.toml:/app/pyproject.toml
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_TWITTER_BEARER_TOKEN=${SOCIALPULSE_TWITTER_BEARER_TOKEN:-}
+    restart: unless-stopped
+    profiles:
+      - pipeline
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - socialpulse
+
+  gold-builder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: gold-builder
+    container_name: socialpulse-gold-builder
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_GOLD_REBUILD_BATCH_SIZE=${SOCIALPULSE_GOLD_REBUILD_BATCH_SIZE:-10000}
+    profiles:
+      - pipeline
+    networks:
+      - socialpulse
+
+  # ============================================================
+  # dbt Services
+  # ============================================================
+
+  dbt:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dbt
+      target: dbt-run
+    container_name: socialpulse-dbt
+    volumes:
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+    profiles:
+      - pipeline
+    networks:
+      - socialpulse
+
+  dbt-docs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dbt
+      target: dbt-docs
+    container_name: socialpulse-dbt-docs
+    ports:
+      - "8585:8585"
+    volumes:
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-development}
+    profiles:
+      - dbt-docs
+    networks:
+      - socialpulse
+
+  # ============================================================
+  # Development / CI Services
+  # ============================================================
+
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: test
+    container_name: socialpulse-test
+    volumes:
+      - ../tests:/app/tests
+      - ../src:/app/src
+      - ../.streamlit:/app/.streamlit
+    environment:
+      - PYTHONPATH=/app
+      - SOCIALPULSE_ENV=test
+      - "SOCIALPULSE_DB_PATH=:memory:"
+    profiles:
+      - ci
+    networks:
+      - socialpulse
+
+  lint:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: lint
+    container_name: socialpulse-lint
+    volumes:
+      - ../src:/app/src
+    profiles:
+      - ci
+    networks:
+      - socialpulse
+
+# ============================================================
+# Volumes — persistent data across restarts
+# ============================================================
+
+volumes:
+  model-cache:
+    driver: local
+
+# ============================================================
+# Network — isolated bridge for all services
+# ============================================================
+
+networks:
+  socialpulse:
+    driver: bridge
+    name: socialpulse
