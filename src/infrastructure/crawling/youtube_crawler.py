@@ -67,11 +67,17 @@ class YouTubeCrawler(BaseCrawler):
     """
 
     def __init__(self) -> None:
-        self._ydl_opts: dict[str, Any] = {
+        self._flat_opts: dict[str, Any] = {
             "quiet": True,
             "no_warnings": True,
             "extract_flat": True,
             "skip_download": True,
+        }
+        self._full_opts: dict[str, Any] = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "ignoreerrors": True,
         }
 
     async def crawl(
@@ -125,16 +131,44 @@ class YouTubeCrawler(BaseCrawler):
         return posts
 
     def _search(self, keyword: str, limit: int) -> list[dict[str, Any]]:
-        """Synchronous yt-dlp search — runs in thread pool."""
+        """Synchronous yt-dlp search — two-phase for full metadata.
+
+        Phase 1: Flat search to get video IDs (fast).
+        Phase 2: Per-video extraction to get full metadata including upload_date.
+        Flat mode omits upload_date, so we must extract each video individually.
+        """
         import yt_dlp  # type: ignore[import-untyped]
 
         search_query = f"ytsearch{limit}:{keyword}"
-
-        with yt_dlp.YoutubeDL(self._ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(self._flat_opts) as ydl:
             info = ydl.extract_info(search_query, download=False)
 
         entries = info.get("entries", []) if info else []
-        return [e for e in entries if e is not None and e.get("id")]
+        video_ids = [e["id"] for e in entries if e is not None and e.get("id")]
+
+        if not video_ids:
+            return []
+
+        results: list[dict[str, Any]] = []
+        with yt_dlp.YoutubeDL(self._full_opts) as ydl:
+            for vid_id in video_ids:
+                try:
+                    video_info = ydl.extract_info(
+                        f"https://www.youtube.com/watch?v={vid_id}",
+                        download=False,
+                    )
+                    if video_info and video_info.get("id"):
+                        results.append(video_info)
+                except Exception:
+                    logger.warning("YouTube: failed to extract video %s, skipping", vid_id)
+                    continue
+
+        logger.info(
+            "YouTube: phase1=%d ids, phase2=%d extracted",
+            len(video_ids),
+            len(results),
+        )
+        return results
 
     async def health_check(self) -> bool:
         """Check if YouTube is reachable by running a minimal search."""

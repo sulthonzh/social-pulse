@@ -249,7 +249,7 @@ class IngestPipeline:
         self._report("crawling", 0, 0)
 
         search_request = await self._search_posts.execute(keyword, platform, start_date, end_date)
-        crawler = create_crawler()
+        crawler = create_crawler(platform=platform)
         crawl_run = await self._ingest_crawl.execute(search_request, crawler)
 
         posts_crawled = crawl_run.posts_fetched

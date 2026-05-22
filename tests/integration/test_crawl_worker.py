@@ -33,14 +33,8 @@ async def test_worker_fetches_pending_requests_from_db(db_with_schema):
     repo = DuckDBSearchRequestRepository(db_with_schema)
     repo.save(_make_request(keyword="python"))
 
-    with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
-        "src.infrastructure.crawling.worker.IngestCrawlRun"
-    ) as mock_uc:
-        mock_crawler_fn.return_value = MagicMock()
-        mock_uc.return_value = AsyncMock()
-        worker = CrawlWorker(db_with_schema)
-
-    pending = worker._fetch_pending_requests()
+    worker = CrawlWorker()
+    pending = worker._fetch_pending_requests(db_with_schema)
     assert len(pending) == 1
     assert pending[0].keyword == "python"
     assert pending[0].status == CrawlStatus.PENDING
@@ -53,14 +47,8 @@ async def test_worker_skips_non_pending_requests(db_with_schema):
     saved = repo.save(request)
     repo.update_status(str(saved.id), "completed", 10)
 
-    with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
-        "src.infrastructure.crawling.worker.IngestCrawlRun"
-    ) as mock_uc:
-        mock_crawler_fn.return_value = MagicMock()
-        mock_uc.return_value = AsyncMock()
-        worker = CrawlWorker(db_with_schema)
-
-    pending = worker._fetch_pending_requests()
+    worker = CrawlWorker()
+    pending = worker._fetch_pending_requests(db_with_schema)
     assert len(pending) == 0
 
 
@@ -76,24 +64,25 @@ async def test_worker_processes_request_end_to_end(db_with_schema):
         posts_fetched=5,
     )
 
+    mock_crawler = MagicMock()
+
     with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
         "src.infrastructure.crawling.worker.IngestCrawlRun",
         return_value=use_case,
-    ):
-        mock_crawler = MagicMock()
+    ), patch("duckdb.connect", return_value=db_with_schema):
         mock_crawler_fn.return_value = mock_crawler
-        worker = CrawlWorker(db_with_schema)
 
-    repo = DuckDBSearchRequestRepository(db_with_schema)
-    repo.save(request)
+        worker = CrawlWorker()
+        repo = DuckDBSearchRequestRepository(db_with_schema)
+        repo.save(request)
 
-    processed = await worker._run_once()
-    assert processed == 1
+        processed = await worker._run_once()
+        assert processed == 1
 
-    use_case.execute.assert_awaited_once()
-    called_request, called_crawler = use_case.execute.call_args[0]
-    assert called_request.keyword == "python"
-    assert called_crawler is mock_crawler
+        use_case.execute.assert_awaited_once()
+        called_request, called_crawler = use_case.execute.call_args[0]
+        assert called_request.keyword == "python"
+        assert called_crawler is mock_crawler
 
 
 @pytest.mark.integration
@@ -114,14 +103,15 @@ async def test_worker_handles_multiple_pending_requests(db_with_schema):
         posts_fetched=3,
     )
 
+    mock_crawler = MagicMock()
+
     with patch("src.infrastructure.crawling.worker.create_crawler") as mock_crawler_fn, patch(
         "src.infrastructure.crawling.worker.IngestCrawlRun",
         return_value=use_case,
-    ):
-        mock_crawler = MagicMock()
+    ), patch("duckdb.connect", return_value=db_with_schema):
         mock_crawler_fn.return_value = mock_crawler
-        worker = CrawlWorker(db_with_schema)
 
-    processed = await worker._run_once()
-    assert processed == 3
-    assert use_case.execute.await_count == 3
+        worker = CrawlWorker()
+        processed = await worker._run_once()
+        assert processed == 3
+        assert use_case.execute.await_count == 3
