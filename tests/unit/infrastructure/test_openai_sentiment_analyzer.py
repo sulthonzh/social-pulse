@@ -20,6 +20,10 @@ class _MockClient:
         self._return_value = return_value
         self._model = "glm-4.5-flash"
 
+    @property
+    def model_name(self) -> str:
+        return self._model
+
     async def chat_json(self, **kwargs: Any) -> dict[str, Any]:
         return self._return_value if self._return_value is not None else {}
 

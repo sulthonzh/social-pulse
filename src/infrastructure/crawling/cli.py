@@ -17,7 +17,7 @@ from src.infrastructure.persistence.duckdb_search_request_repository import (
     DuckDBSearchRequestRepository,
 )
 from src.infrastructure.persistence.migrations import create_all_tables
-from src.shared.config import settings
+from src.shared.db_retry import connect_with_retry
 
 logger = structlog.get_logger()
 
@@ -32,9 +32,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        import duckdb  # noqa: PLC0415
-
-        conn = duckdb.connect(settings.db_path)
+        conn = connect_with_retry()
         try:
             create_all_tables(conn)
 

@@ -35,6 +35,10 @@ class OpenAIClient:
         self._model = model
         self._client: AsyncOpenAI | None = client
 
+    @property
+    def model_name(self) -> str:
+        return self._model
+
     def _ensure_client(self) -> AsyncOpenAI:
         if self._client is None:
             from openai import AsyncOpenAI  # noqa: PLC0415

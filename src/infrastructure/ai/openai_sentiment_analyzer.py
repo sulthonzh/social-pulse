@@ -66,7 +66,7 @@ class OpenAISentimentAnalyzer:
             logger.warning("openai_sentiment_empty_response")
             return _UNKNOWN_RESULT
 
-        result = _parse_response(data, self._client._model)
+        result = _parse_response(data, self._client.model_name)
         logger.debug(
             "sentiment_analyzed",
             label=result.label,

@@ -21,6 +21,9 @@ class LinguaLanguageDetector:
     def __init__(self, detector: _DetectorProtocol | None = None) -> None:
         self._detector: _DetectorProtocol | None = detector
 
+    def cleanup(self) -> None:
+        self._detector = None
+
     def _ensure_detector(self) -> _DetectorProtocol:
         if self._detector is None:
             from lingua import Language, LanguageDetectorBuilder  # noqa: PLC0415

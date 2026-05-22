@@ -63,13 +63,12 @@ class TwitterCrawler(BaseCrawler):
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
                 logger.error(
-                    "Twitter API error: status=%s body=%s",
+                    "twitter_api_error status=%s error=HTTP error response",
                     exc.response.status_code,
-                    exc.response.text,
                 )
                 raise CrawlError(f"Twitter API returned {exc.response.status_code}") from exc
             except httpx.RequestError as exc:
-                logger.error("Twitter request failed: %s", exc)
+                logger.error("twitter_request_failed error=Request failed")
                 raise CrawlError(f"Twitter request failed: {exc}") from exc
 
             data = response.json()
