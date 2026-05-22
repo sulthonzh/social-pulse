@@ -72,6 +72,7 @@ socialpulse = "src.presentation.app:main"
 socialpulse-crawl = "src.infrastructure.crawling.cli:main"
 socialpulse-enrich = "src.application.use_cases.run_enrichment:cli_main"
 socialpulse-gold = "src.application.use_cases.build_gold:cli_main"
+socialpulse-purge = "src.infrastructure.crawling.purge:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -214,6 +215,7 @@ omit = [
     "src/infrastructure/ai/worker.py",
     "src/infrastructure/gold/builder.py",
     "src/infrastructure/crawling/cli.py",
+    "src/infrastructure/crawling/purge.py",
     "src/application/use_cases/run_enrichment.py",
     "src/application/use_cases/build_gold.py",
 ]

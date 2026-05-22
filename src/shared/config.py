@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     crawl_timeout_seconds: int = 30
     ai_max_retries: int = 3
     gold_rebuild_batch_size: int = 10000
+    retention_days: int = 90
 
 
 settings = Settings()
