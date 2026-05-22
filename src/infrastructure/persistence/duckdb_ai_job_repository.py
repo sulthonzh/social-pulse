@@ -179,3 +179,43 @@ class DuckDBAIJobRepository:
             f"UPDATE {_TABLE} SET attempts = ? WHERE id = ?",
             [attempts, job_id],
         )
+
+    def reset_failed_jobs(self, job_type: str | None = None) -> int:
+        if job_type is not None:
+            row = self._conn.execute(
+                f"SELECT count(*) FROM {_TABLE} WHERE status = 'failed' AND job_type = ?",
+                [job_type],
+            ).fetchone()
+            self._conn.execute(
+                f"""
+                UPDATE {_TABLE}
+                SET status = 'pending',
+                    error_message = NULL,
+                    started_at = NULL,
+                    completed_at = NULL
+                WHERE status = 'failed' AND job_type = ?
+                """,
+                [job_type],
+            )
+        else:
+            row = self._conn.execute(
+                f"SELECT count(*) FROM {_TABLE} WHERE status = 'failed'",
+            ).fetchone()
+            self._conn.execute(
+                f"""
+                UPDATE {_TABLE}
+                SET status = 'pending',
+                    error_message = NULL,
+                    started_at = NULL,
+                    completed_at = NULL
+                WHERE status = 'failed'
+                """,
+            )
+
+        reset_count = int(str(row[0])) if row is not None else 0
+        logger.info(
+            "ai_jobs.reset_failed",
+            reset_count=reset_count,
+            job_type=job_type,
+        )
+        return reset_count
