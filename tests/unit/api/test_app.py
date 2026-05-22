@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from src.api.app import app
@@ -15,12 +17,26 @@ async def client():
 class TestHealthEndpoint:
     @pytest.mark.asyncio
     async def test_health_returns_ok(self, client: AsyncClient) -> None:
-        response = await client.get("/api/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert "db_path" in data
-        assert "env" in data
+        mock_conn = MagicMock()
+        mock_conn.execute.return_value.fetchone.return_value = (1,)
+
+        with patch("duckdb.connect", return_value=mock_conn):
+            response = await client.get("/api/health")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "ok"
+            assert "db_path" in data
+            assert "env" in data
+
+    @pytest.mark.asyncio
+    async def test_health_returns_degraded_when_db_unavailable(
+        self, client: AsyncClient
+    ) -> None:
+        with patch("duckdb.connect", side_effect=Exception("no db")):
+            response = await client.get("/api/health")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "degraded"
 
 
 class TestStartPipeline:
