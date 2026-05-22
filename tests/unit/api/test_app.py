@@ -29,9 +29,7 @@ class TestHealthEndpoint:
             assert "env" in data
 
     @pytest.mark.asyncio
-    async def test_health_returns_degraded_when_db_unavailable(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_health_returns_degraded_when_db_unavailable(self, client: AsyncClient) -> None:
         with patch("duckdb.connect", side_effect=Exception("no db")):
             response = await client.get("/api/health")
             assert response.status_code == 200
