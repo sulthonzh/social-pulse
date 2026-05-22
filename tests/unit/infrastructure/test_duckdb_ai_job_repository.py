@@ -191,3 +191,82 @@ class TestDuckDBAIJobRepository:
     def test_update_attempts_for_nonexistent_job_does_not_raise(self, db_with_schema):
         repo = DuckDBAIJobRepository(db_with_schema)
         repo.update_attempts(str(uuid4()), 5)
+
+    def test_reset_failed_jobs_resets_status(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        job = _make_ai_job(post.id, status=AIJobStatus.FAILED)
+        repo.save(job)
+
+        repo.reset_failed_jobs()
+
+        pending = repo.get_pending_jobs()
+        assert len(pending) == 1
+        assert pending[0].status == AIJobStatus.PENDING
+
+    def test_reset_failed_jobs_clears_error_fields(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        job = _make_ai_job(
+            post.id,
+            status=AIJobStatus.FAILED,
+            error_message="timeout",
+            started_at=datetime(2025, 1, 15, 14, 0, 0),
+            completed_at=datetime(2025, 1, 15, 14, 1, 0),
+        )
+        repo.save(job)
+
+        repo.reset_failed_jobs()
+
+        pending = repo.get_pending_jobs()
+        assert len(pending) == 1
+        found = pending[0]
+        assert found.error_message is None
+        assert found.started_at is None
+        assert found.completed_at is None
+
+    def test_reset_failed_jobs_returns_count(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        for _ in range(3):
+            repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED))
+
+        result = repo.reset_failed_jobs()
+
+        assert result == 3
+
+    def test_reset_failed_jobs_filters_by_type(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT))
+        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.FULL_ENRICHMENT))
+        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED, job_type=AIJobType.SENTIMENT))
+
+        result = repo.reset_failed_jobs(job_type="full_enrichment")
+
+        assert result == 2
+        pending = repo.get_pending_jobs()
+        assert len(pending) == 2
+        assert all(j.job_type == AIJobType.FULL_ENRICHMENT for j in pending)
+
+    def test_reset_failed_jobs_no_failed_returns_zero(self, db_with_schema):
+        repo = DuckDBAIJobRepository(db_with_schema)
+
+        result = repo.reset_failed_jobs()
+
+        assert result == 0
+
+    def test_reset_failed_jobs_does_not_affect_completed(self, db_with_schema):
+        post = _insert_silver_post(db_with_schema)
+        repo = DuckDBAIJobRepository(db_with_schema)
+        repo.save(_make_ai_job(post.id, status=AIJobStatus.FAILED))
+        repo.save(_make_ai_job(post.id, status=AIJobStatus.COMPLETED))
+
+        repo.reset_failed_jobs()
+
+        pending = repo.get_pending_jobs()
+        assert len(pending) == 1
+        completed = db_with_schema.execute(
+            "SELECT count(*) FROM silver.ai_jobs WHERE status = 'completed'",
+        ).fetchone()
+        assert int(str(completed[0])) == 1
