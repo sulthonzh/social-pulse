@@ -39,6 +39,17 @@ settings = Settings()
 _db_migrated: bool = False
 
 
+def enable_wal_mode() -> None:
+    """Enable WAL mode for better concurrent read/write performance."""
+    import duckdb  # noqa: PLC0415
+
+    conn = duckdb.connect(str(settings.db_path))
+    try:
+        conn.execute("SET wal_autocheckpoint = '100MB'")
+    finally:
+        conn.close()
+
+
 def get_db_connection(read_only: bool = False) -> duckdb.DuckDBPyConnection:
     """Open a DuckDB connection, running migrations once on first call."""
     import duckdb  # noqa: PLC0415
@@ -46,6 +57,9 @@ def get_db_connection(read_only: bool = False) -> duckdb.DuckDBPyConnection:
     from src.infrastructure.persistence.migrations import create_all_tables  # noqa: PLC0415
 
     global _db_migrated  # noqa: PLW0603
+
+    if ":memory:" not in settings.db_path and not _db_migrated:
+        enable_wal_mode()
 
     conn = duckdb.connect(str(settings.db_path), read_only=read_only)
 
