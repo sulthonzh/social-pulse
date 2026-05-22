@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -271,7 +271,7 @@ class TestCrawlWorkerShutdown:
             mock_crawler.return_value = MagicMock()
             worker = CrawlWorker()
 
-            import asyncio
+            import asyncio  # noqa: PLC0415
 
             async def shutdown_soon():
                 await asyncio.sleep(0.05)

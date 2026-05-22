@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 import subprocess
 import time
 from datetime import date, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import duckdb
 
 # In Docker, services talk via service names; locally it's localhost
-_API_BASE = "http://api:8000" if os.path.exists("/.dockerenv") else "http://localhost:8000"
+_API_BASE = "http://api:8000" if Path("/.dockerenv").exists() else "http://localhost:8000"
 _MAX_KEYWORD_LENGTH = 200
 _MAX_DATE_RANGE_DAYS = 365
 
@@ -41,7 +41,7 @@ def _ensure_api_server() -> bool:
         return True
 
     # In Docker the api service should be running separately — no auto-start
-    if os.path.exists("/.dockerenv"):
+    if Path("/.dockerenv").exists():
         return False
 
     # Local dev: spawn uvicorn as subprocess

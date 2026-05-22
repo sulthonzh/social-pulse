@@ -20,23 +20,23 @@ def create_crawler(platform: Platform | None = None) -> BaseCrawler:
         platform_value = platform.value if hasattr(platform, "value") else str(platform)
 
         if platform_value == "youtube":
-            from src.infrastructure.crawling.youtube_crawler import YouTubeCrawler
+            from src.infrastructure.crawling.youtube_crawler import YouTubeCrawler  # noqa: PLC0415
 
             return YouTubeCrawler()
 
         if platform_value == "reddit":
-            from src.infrastructure.crawling.reddit_crawler import RedditCrawler
+            from src.infrastructure.crawling.reddit_crawler import RedditCrawler  # noqa: PLC0415
 
             return RedditCrawler()
 
         if platform_value == "twitter":
-            from src.shared.config import settings
+            from src.shared.config import settings  # noqa: PLC0415
 
             if settings.twitter_bearer_token:
-                from src.infrastructure.crawling.twitter_crawler import TwitterCrawler
+                from src.infrastructure.crawling.twitter_crawler import TwitterCrawler  # noqa: PLC0415  # isort: skip
 
                 return TwitterCrawler()
 
-    from src.infrastructure.crawling.simulation_crawler import SimulationCrawler
+    from src.infrastructure.crawling.simulation_crawler import SimulationCrawler  # noqa: PLC0415
 
     return SimulationCrawler()
