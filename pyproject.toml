@@ -80,8 +80,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-[tool.uv.extra-build-dependencies]
-socialpulse = ["hatchling"]
+[tool.uv]
+dev-dependencies = []
 
 # ============================================================
 # Ruff - Linter & Formatter
