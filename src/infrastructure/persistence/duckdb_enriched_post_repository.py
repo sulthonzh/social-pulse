@@ -191,6 +191,43 @@ class DuckDBEnrichedPostRepository:
         ).fetchall()
         return [_row_to_enriched_post(row) for row in rows]
 
+    def get_by_search_paginated(
+        self,
+        search_request_id: str,
+        limit: int = 1000,
+        offset: int = 0,
+    ) -> list[EnrichedPost]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_SELECT_COLUMNS}
+            FROM {_TABLE}
+            WHERE search_request_id = ?
+            ORDER BY posted_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            [search_request_id, limit, offset],
+        ).fetchall()
+        return [_row_to_enriched_post(row) for row in rows]
+
+    def get_enriched_since_paginated(
+        self,
+        search_request_id: str,
+        since: datetime,
+        limit: int = 1000,
+        offset: int = 0,
+    ) -> list[EnrichedPost]:
+        rows = self._conn.execute(
+            f"""
+            SELECT {_SELECT_COLUMNS}
+            FROM {_TABLE}
+            WHERE search_request_id = ? AND created_at > ?
+            ORDER BY posted_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            [search_request_id, since, limit, offset],
+        ).fetchall()
+        return [_row_to_enriched_post(row) for row in rows]
+
     def count_by_search(self, search_request_id: str) -> int:
         result_row = self._conn.execute(
             f"SELECT count(*) FROM {_TABLE} WHERE search_request_id = ?",
