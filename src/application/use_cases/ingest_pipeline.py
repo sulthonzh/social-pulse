@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -46,9 +45,12 @@ from src.infrastructure.persistence.duckdb_search_request_repository import (
 from src.shared.config import settings
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import duckdb
 
     from src.domain.entities.raw_post import RawPost
+    from src.domain.interfaces import LanguageDetector, SentimentAnalyzer, TopicExtractor
 
 logger = structlog.get_logger(__name__)
 
@@ -56,7 +58,7 @@ logger = structlog.get_logger(__name__)
 class PipelineResult:
     """Summary of a completed pipeline run."""
 
-    __slots__ = ("search_request_id", "posts_crawled", "posts_enriched", "gold_built")
+    __slots__ = ("gold_built", "posts_crawled", "posts_enriched", "search_request_id")
 
     def __init__(
         self,
@@ -167,6 +169,9 @@ class IngestPipeline:
         gold_summary_repo = DuckDBGoldCampaignSummaryRepository(conn)
 
         # -- AI adapters (same initialization logic as worker.py) --
+        sentiment_analyzer: SentimentAnalyzer
+        topic_extractor: TopicExtractor
+        language_detector: LanguageDetector
         if settings.ai_provider == "openai":
             from src.infrastructure.ai.openai_client import OpenAIClient  # noqa: PLC0415
             from src.infrastructure.ai.openai_language_detector import (  # noqa: PLC0415

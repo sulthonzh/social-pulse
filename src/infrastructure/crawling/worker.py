@@ -141,7 +141,7 @@ class CrawlWorker:
         Opens a connection, processes pending requests, then closes it
         to release the DuckDB write lock before sleeping.
         """
-        import duckdb
+        import duckdb  # noqa: PLC0415
 
         conn = duckdb.connect(settings.db_path)
         try:
