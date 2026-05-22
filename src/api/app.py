@@ -13,7 +13,7 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from src.api.events import EventBus, PipelineEvent, PipelineStage, event_bus
@@ -26,10 +26,10 @@ logger = structlog.get_logger(__name__)
 
 
 class PipelineStartRequest(BaseModel):
-    keyword: str
-    platform: str
-    start_date: str  # ISO format YYYY-MM-DD
-    end_date: str  # ISO format YYYY-MM-DD
+    keyword: str = Field(min_length=1, max_length=200)
+    platform: str = Field(pattern=r"^(twitter|facebook|instagram|youtube|reddit)$")
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 
 class PipelineStartResponse(BaseModel):
@@ -39,6 +39,8 @@ class PipelineStartResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+    db_path: str
+    env: str
 
 
 async def _run_pipeline(
@@ -163,6 +165,15 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("api_server_stopped")
 
 
+_ALLOWED_ORIGINS = [
+    "http://localhost:8501",   # Streamlit dev
+    "http://localhost:3000",   # Frontend dev
+    "http://socialpulse-app:8501",  # Docker internal
+]
+
+if settings.env == "development":
+    _ALLOWED_ORIGINS.append("*")
+
 app = FastAPI(
     title="SocialPulse Pipeline API",
     version="0.1.0",
@@ -171,16 +182,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
 @app.get("/api/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok")
+    return HealthResponse(
+        status="ok",
+        db_path=settings.db_path,
+        env=settings.env,
+    )
 
 
 @app.post("/api/pipeline/start", response_model=PipelineStartResponse)
