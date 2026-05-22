@@ -32,7 +32,7 @@ def render() -> None:
         start_date, end_date = render_date_range_filter()
 
     try:
-        conn = get_db_connection()
+        conn = get_db_connection(read_only=True)
         offset, limit = render_pagination(total=10000, page_size=50, key="explorer_page")
 
         from src.application.use_cases.search_gold_posts import SearchGoldPosts  # noqa: PLC0415
