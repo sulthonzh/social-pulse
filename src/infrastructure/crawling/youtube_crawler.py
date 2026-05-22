@@ -26,14 +26,30 @@ logger = logging.getLogger(__name__)
 
 def _extract_metadata(info: dict[str, Any]) -> dict[str, Any]:
     """Extract standardized metadata from a yt-dlp video info dict."""
+    upload_date_str = info.get("upload_date", "")
+    title = info.get("title", "")
+    description = info.get("description", "") or ""
+    channel = info.get("channel", "")
+    uploader = info.get("uploader", "")
+    webpage_url = info.get("webpage_url", info.get("original_url", ""))
+
+    posted_at_iso = ""
+    if upload_date_str and len(upload_date_str) == 8:
+        posted_at_iso = (
+            f"{upload_date_str[:4]}-{upload_date_str[4:6]}-{upload_date_str[6:8]}T00:00:00+00:00"
+        )
+
     return {
         "id": info.get("id", ""),
-        "title": info.get("title", ""),
-        "description": info.get("description", ""),
-        "channel": info.get("channel", ""),
+        "title": title,
+        "description": description,
+        "text": f"{title} {description}".strip(),
+        "channel": channel,
         "channel_id": info.get("channel_id", ""),
-        "uploader": info.get("uploader", ""),
-        "upload_date": info.get("upload_date", ""),
+        "uploader": uploader,
+        "author_name": channel or uploader,
+        "upload_date": upload_date_str,
+        "posted_at": posted_at_iso,
         "duration": info.get("duration"),
         "view_count": info.get("view_count"),
         "like_count": info.get("like_count"),
@@ -41,7 +57,13 @@ def _extract_metadata(info: dict[str, Any]) -> dict[str, Any]:
         "tags": info.get("tags", []),
         "categories": info.get("categories", []),
         "thumbnail": info.get("thumbnail", ""),
-        "url": info.get("webpage_url", info.get("original_url", "")),
+        "url": webpage_url,
+        "post_url": webpage_url,
+        "public_metrics": {
+            "like_count": info.get("like_count", 0) or 0,
+            "view_count": info.get("view_count", 0) or 0,
+            "reply_count": info.get("comment_count", 0) or 0,
+        },
     }
 
 
