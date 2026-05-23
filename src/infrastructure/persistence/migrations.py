@@ -10,12 +10,112 @@ authoritative schema definition exactly.
 
 from __future__ import annotations
 
+import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import duckdb
 
+logger = logging.getLogger(__name__)
+
 SCHEMA_VERSION: int = 4
+
+
+@dataclass(frozen=True)
+class Migration:
+    version: int
+    description: str
+    up_sql: str
+    down_sql: str
+
+
+_MIGRATIONS: list[Migration] = [
+    Migration(
+        version=2,
+        description="add topic_confidence to silver and gold tables",
+        up_sql=(
+            "ALTER TABLE silver.silver_ai_enrichment"
+            " ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;"
+        ),
+        down_sql=(
+            # DuckDB blocks ALTER TABLE DROP COLUMN while indexes exist,
+            # so we must drop all indexes first, alter, then recreate.
+            "DROP INDEX IF EXISTS silver.idx_silver_enrichment_post;\n"
+            "DROP INDEX IF EXISTS silver.idx_silver_enrichment_version;\n"
+            "DROP INDEX IF EXISTS silver.idx_silver_enrichment_sentiment;\n"
+            "DROP INDEX IF EXISTS silver.idx_silver_enrichment_lang;\n"
+            "ALTER TABLE silver.silver_ai_enrichment"
+            " DROP COLUMN topic_confidence;\n"
+            "CREATE INDEX IF NOT EXISTS idx_silver_enrichment_post"
+            " ON silver.silver_ai_enrichment(silver_post_id);\n"
+            "CREATE INDEX IF NOT EXISTS idx_silver_enrichment_version"
+            " ON silver.silver_ai_enrichment(ai_version);\n"
+            "CREATE INDEX IF NOT EXISTS idx_silver_enrichment_sentiment"
+            " ON silver.silver_ai_enrichment(sentiment);\n"
+            "CREATE INDEX IF NOT EXISTS idx_silver_enrichment_lang"
+            " ON silver.silver_ai_enrichment(language);\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_keyword;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_sentiment;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_platform;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_posted;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_topic;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_lang;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_request;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " DROP COLUMN topic_confidence;\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_keyword"
+            " ON gold.gold_post_search(keyword);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_sentiment"
+            " ON gold.gold_post_search(sentiment);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_platform"
+            " ON gold.gold_post_search(platform);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_posted"
+            " ON gold.gold_post_search(posted_at DESC);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_topic"
+            " ON gold.gold_post_search(topic_label);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_lang"
+            " ON gold.gold_post_search(language);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_request"
+            " ON gold.gold_post_search(search_request_id)"
+        ),
+    ),
+    Migration(
+        version=3,
+        description="add gold_build_tracking table for incremental builds",
+        up_sql=(
+            "CREATE TABLE IF NOT EXISTS config.gold_build_tracking (\n"
+            "            search_request_id UUID NOT NULL,\n"
+            "            last_built_at     TIMESTAMP NOT NULL,\n"
+            "            posts_processed   INTEGER DEFAULT 0,\n"
+            "            UNIQUE(search_request_id)\n"
+            "        )"
+        ),
+        down_sql="DROP TABLE IF EXISTS config.gold_build_tracking",
+    ),
+    Migration(
+        version=4,
+        description="add time-based indexes for incremental query performance",
+        up_sql=(
+            "CREATE INDEX IF NOT EXISTS idx_silver_posts_created_at"
+            " ON silver.silver_posts(created_at);\n"
+            "CREATE INDEX IF NOT EXISTS idx_silver_enrichment_created_at"
+            " ON silver.silver_ai_enrichment(created_at);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_created_at"
+            " ON gold.gold_post_search(created_at);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_created_at"
+            " ON gold.gold_campaign_daily(created_at)"
+        ),
+        down_sql=(
+            "DROP INDEX IF EXISTS silver.idx_silver_posts_created_at;\n"
+            "DROP INDEX IF EXISTS silver.idx_silver_enrichment_created_at;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_created_at;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_created_at"
+        ),
+    ),
+]
 
 
 def create_all_tables(conn: duckdb.DuckDBPyConnection) -> None:
@@ -207,7 +307,6 @@ def _create_silver_schema(conn: duckdb.DuckDBPyConnection) -> None:
 def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("CREATE SCHEMA IF NOT EXISTS gold")
 
-    # Post Explorer - flat, filterable, physically ordered by recency
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS gold.gold_post_search (
@@ -265,7 +364,6 @@ def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON gold.gold_post_search(search_request_id)"
     )
 
-    # Campaign Analytics - daily aggregation
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS gold.gold_campaign_daily (
@@ -306,7 +404,6 @@ def _create_gold_schema(conn: duckdb.DuckDBPyConnection) -> None:
         "    ON gold.gold_campaign_daily(search_request_id)"
     )
 
-    # Cross-Campaign Comparison - per-campaign summary
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS gold.gold_campaign_summary (
@@ -391,38 +488,41 @@ def _apply_migration(
 
 def run_migrations(conn: duckdb.DuckDBPyConnection) -> None:
     """Run incremental migrations after initial schema creation."""
-    _apply_migration(
-        conn,
-        2,
-        "add topic_confidence to silver and gold tables",
-        """
-        ALTER TABLE silver.silver_ai_enrichment ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
-        ALTER TABLE gold.gold_post_search ADD COLUMN IF NOT EXISTS topic_confidence FLOAT;
-        """,
-    )
+    for migration in _MIGRATIONS:
+        _apply_migration(conn, migration.version, migration.description, migration.up_sql)
 
-    _apply_migration(
-        conn,
-        3,
-        "add gold_build_tracking table for incremental builds",
-        """
-        CREATE TABLE IF NOT EXISTS config.gold_build_tracking (
-            search_request_id UUID NOT NULL,
-            last_built_at     TIMESTAMP NOT NULL,
-            posts_processed   INTEGER DEFAULT 0,
-            UNIQUE(search_request_id)
+
+def get_applied_version(conn: duckdb.DuckDBPyConnection) -> int:
+    """Return the highest applied migration version, or 1 if none applied."""
+    row = conn.execute("SELECT COALESCE(MAX(version), 1) FROM config.schema_migrations").fetchone()
+    if row is None:
+        return 1
+    return int(row[0])
+
+
+def rollback_migration(conn: duckdb.DuckDBPyConnection, target_version: int) -> None:
+    """Roll back migrations from the current version down to *target_version* (exclusive).
+
+    The target_version must be >= 1. All migrations with version > target_version
+    are applied in reverse order.
+    """
+    if target_version < 1:
+        msg = f"target_version must be >= 1, got {target_version}"
+        raise ValueError(msg)
+
+    current = get_applied_version(conn)
+    to_rollback = [m for m in _MIGRATIONS if target_version < m.version <= current]
+    to_rollback.sort(key=lambda m: m.version, reverse=True)
+
+    for migration in to_rollback:
+        logger.info(
+            "Rolling back migration v%d: %s",
+            migration.version,
+            migration.description,
         )
-        """,
-    )
-
-    _apply_migration(
-        conn,
-        4,
-        "add time-based indexes for incremental query performance",
-        """
-        CREATE INDEX IF NOT EXISTS idx_silver_posts_created_at ON silver.silver_posts(created_at);
-        CREATE INDEX IF NOT EXISTS idx_silver_enrichment_created_at ON silver.silver_ai_enrichment(created_at);
-        CREATE INDEX IF NOT EXISTS idx_gold_post_search_created_at ON gold.gold_post_search(created_at);
-        CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_created_at ON gold.gold_campaign_daily(created_at);
-        """,
-    )
+        conn.execute(migration.down_sql)
+        conn.execute(
+            "DELETE FROM config.schema_migrations WHERE version = ?",
+            [migration.version],
+        )
+        logger.info("Rollback of v%d complete", migration.version)
