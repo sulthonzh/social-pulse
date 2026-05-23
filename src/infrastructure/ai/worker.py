@@ -45,6 +45,7 @@ from src.infrastructure.persistence.duckdb_post_repository import (
 from src.infrastructure.persistence.migrations import create_all_tables
 from src.shared.circuit_breaker import CircuitBreaker, CircuitOpenError
 from src.shared.config import settings
+from src.shared.worker_health import WorkerHealthServer
 
 if TYPE_CHECKING:
     from src.domain.interfaces import (
@@ -82,9 +83,9 @@ _UNENRICHED_SQL = """
 
 def _row_to_raw_post(row: tuple[object, ...]) -> RawPost:
     """Convert a DuckDB row to a RawPost entity."""
-    import json  # noqa: PLC0415
-    from datetime import datetime  # noqa: PLC0415
-    from uuid import UUID  # noqa: PLC0415
+    import json
+    from datetime import datetime
+    from uuid import UUID
 
     (
         raw_id,
@@ -125,8 +126,13 @@ def _row_to_raw_post(row: tuple[object, ...]) -> RawPost:
 class AIEnrichmentWorker:
     """Polls for unenriched bronze posts and runs AI enrichment."""
 
-    def __init__(self, conn: duckdb.DuckDBPyConnection) -> None:
+    def __init__(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        health_server: WorkerHealthServer | None = None,
+    ) -> None:
         self._conn = conn
+        self._health_server = health_server
         self._shutdown_event = asyncio.Event()
         self._circuit_breaker = CircuitBreaker(
             failure_threshold=settings.circuit_breaker_failure_threshold,
@@ -193,10 +199,14 @@ class AIEnrichmentWorker:
         try:
             await self._circuit_breaker.call(self._use_case.execute, raw_post)
             logger.info("job_completed", raw_post_id=post_id)
+            if self._health_server is not None:
+                self._health_server.record_job_processed()
         except CircuitOpenError:
             logger.warning("job_skipped_circuit_open", raw_post_id=post_id)
         except EnrichmentError:
             logger.exception("job_failed", raw_post_id=post_id)
+            if self._health_server is not None:
+                self._health_server.record_error()
 
     async def _run_once(self) -> int:
         """Single poll iteration. Returns number of posts processed."""
@@ -243,7 +253,11 @@ async def run(conn: duckdb.DuckDBPyConnection) -> None:
     """Entry point: run migrations, wire up the worker, handle signals."""
     create_all_tables(conn)
 
-    worker = AIEnrichmentWorker(conn)
+    health_server = WorkerHealthServer(port=settings.worker_health_port)
+    health_server.start()
+    logger.info("health_server_started", port=settings.worker_health_port)
+
+    worker = AIEnrichmentWorker(conn, health_server=health_server)
 
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -252,7 +266,10 @@ async def run(conn: duckdb.DuckDBPyConnection) -> None:
             worker.request_shutdown,
         )
 
-    await worker.run_forever()
+    try:
+        await worker.run_forever()
+    finally:
+        health_server.stop()
 
 
 async def main() -> None:
@@ -261,7 +278,7 @@ async def main() -> None:
     Retries with exponential backoff when the database is locked
     by another process (e.g., the Streamlit app).
     """
-    from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
+    from src.shared.db_retry import connect_with_retry
 
     conn: duckdb.DuckDBPyConnection = connect_with_retry()
 

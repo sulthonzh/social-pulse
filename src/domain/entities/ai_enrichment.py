@@ -26,6 +26,7 @@ class AIEnrichment(BaseModel):
     sentiment_confidence: float | None = None
     metadata_model_name: str | None = None
     metadata_model_version: str | None = None
+    prompt_version: str | None = "v1"
     sentiment_model_name: str | None = None
     sentiment_model_version: str | None = None
     created_at: datetime = Field(

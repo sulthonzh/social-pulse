@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
 
+from src.shared.token_budget import TokenBudget, estimate_tokens
+
 if TYPE_CHECKING:
     from openai import AsyncOpenAI
 
@@ -29,11 +31,13 @@ class OpenAIClient:
         base_url: str = "https://api.z.ai/api/coding/paas/v4",
         model: str = "glm-4.7",
         client: AsyncOpenAI | None = None,
+        token_budget: TokenBudget | None = None,
     ) -> None:
         self._api_key = api_key
         self._base_url = base_url
         self._model = model
         self._client: AsyncOpenAI | None = client
+        self._token_budget = token_budget
 
     @property
     def model_name(self) -> str:
@@ -41,7 +45,7 @@ class OpenAIClient:
 
     def _ensure_client(self) -> AsyncOpenAI:
         if self._client is None:
-            from openai import AsyncOpenAI  # noqa: PLC0415
+            from openai import AsyncOpenAI
 
             self._client = AsyncOpenAI(
                 api_key=self._api_key,
@@ -56,6 +60,16 @@ class OpenAIClient:
         user_prompt: str,
         temperature: float = 0.0,
     ) -> dict[str, Any]:
+        combined = system_prompt + user_prompt
+        estimated = estimate_tokens(combined)
+
+        if self._token_budget is not None and not self._token_budget.check_budget(estimated):
+            logger.warning(
+                "openai_token_budget_exceeded",
+                estimated_tokens=estimated,
+            )
+            return {}
+
         client = self._ensure_client()
         response = await client.chat.completions.create(
             model=self._model,
@@ -75,5 +89,9 @@ class OpenAIClient:
         )
         if not content:
             return {}
+
+        if self._token_budget is not None:
+            self._token_budget.record_usage(estimated)
+
         result: dict[str, Any] = json.loads(content)
         return result
