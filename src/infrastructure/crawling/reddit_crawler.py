@@ -159,8 +159,9 @@ class RedditCrawler(BaseCrawler):
             params["after"] = after
 
         try:
-            response = await client.get("/search.json", params=params)
-            response.raise_for_status()
+            from src.shared.http_retry import async_fetch_with_retry
+
+            response = await async_fetch_with_retry(client, "GET", "/search.json", params=params)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 429:  # noqa: PLR2004
                 logger.warning("Reddit rate limited — slowing down")
