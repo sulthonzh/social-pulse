@@ -110,6 +110,77 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  security-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runtime
+          push: false
+          load: true
+          tags: socialpulse-runtime:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: api
+          push: false
+          load: true
+          tags: socialpulse-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan runtime image with Trivy
+        uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+        with:
+          image-ref: socialpulse-runtime:${{ github.sha }}
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-runtime-results.sarif
+
+      - name: Scan API image with Trivy
+        uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
+        with:
+          image-ref: socialpulse-api:${{ github.sha }}
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-api-results.sarif
+
+      - name: Upload runtime SARIF results
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-runtime-results.sarif
+          category: trivy-runtime
+
+      - name: Upload API SARIF results
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-api-results.sarif
+          category: trivy-api
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
