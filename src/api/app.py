@@ -15,7 +15,7 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import JSONResponse, Response
 
@@ -49,10 +49,31 @@ def _cleanup_expired_starts() -> None:
 
 
 class PipelineStartRequest(BaseModel):
-    keyword: str = Field(min_length=1, max_length=200)
-    platform: str = Field(pattern=r"^(twitter|facebook|instagram|youtube|reddit)$")
-    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    keyword: str = Field(
+        min_length=1,
+        max_length=200,
+        description="Search keyword for social media posts",
+    )
+    platform: str = Field(
+        pattern=r"^(twitter|facebook|instagram|youtube|reddit)$",
+        description="Target platform: twitter, facebook, instagram, youtube, reddit",
+    )
+    start_date: str = Field(
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Start date in YYYY-MM-DD format",
+    )
+    end_date: str = Field(
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="End date in YYYY-MM-DD format",
+    )
+
+    @model_validator(mode="after")
+    def validate_date_range(self) -> PipelineStartRequest:
+        start = date.fromisoformat(self.start_date)
+        end = date.fromisoformat(self.end_date)
+        if end < start:
+            raise ValueError("end_date must be on or after start_date")
+        return self
 
 
 class PipelineStartResponse(BaseModel):
@@ -74,12 +95,12 @@ async def _run_pipeline(
     end_date: date,
     bus: EventBus,
 ) -> None:
-    import duckdb  # noqa: PLC0415
+    import duckdb
 
-    from src.application.use_cases.ingest_pipeline import (  # noqa: PLC0415
+    from src.application.use_cases.ingest_pipeline import (
         IngestPipeline,
     )
-    from src.domain.value_objects.platform import Platform  # noqa: PLC0415
+    from src.domain.value_objects.platform import Platform
 
     def on_progress(stage: str, current: int, total: int) -> None:
         stage_enum = (
@@ -273,7 +294,7 @@ async def auth_middleware(
 async def health() -> HealthResponse:
     db_ok = False
     try:
-        import duckdb  # noqa: PLC0415
+        import duckdb
 
         conn = duckdb.connect(settings.db_path, read_only=True)
         conn.execute("SELECT 1").fetchone()
@@ -293,6 +314,12 @@ async def health() -> HealthResponse:
 async def get_metrics() -> MetricsResponse:
     snapshot = metrics.get_snapshot()
     return MetricsResponse(**snapshot)
+
+
+@app.get("/metrics")
+async def prometheus_metrics() -> Response:
+    text = metrics.generate_prometheus_text()
+    return Response(content=text, media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.post("/api/pipeline/start", response_model=PipelineStartResponse)
