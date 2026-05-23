@@ -9,7 +9,7 @@
 # ============================================================
 
 # ---- Base: Python + dbt-duckdb (lean) ----
-FROM python:3.12-slim AS dbt-base
+FROM python:3.14-slim AS dbt-base
 
 WORKDIR /app
 
