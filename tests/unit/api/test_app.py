@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from src.api.app import app
+from src.api.app import _recent_starts, app
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -242,8 +242,6 @@ class TestInputValidation:
 
     @pytest.mark.asyncio
     async def test_valid_request_returns_200(self, client: AsyncClient) -> None:
-        from src.api.app import _recent_starts
-
         _recent_starts.clear()
         mock_task = MagicMock()
         mock_task.add_done_callback = MagicMock()
@@ -264,8 +262,6 @@ class TestInputValidation:
 
     @pytest.mark.asyncio
     async def test_legacy_valid_request_returns_200(self, client: AsyncClient) -> None:
-        from src.api.app import _recent_starts
-
         _recent_starts.clear()
         mock_task = MagicMock()
         mock_task.add_done_callback = MagicMock()

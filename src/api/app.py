@@ -100,12 +100,12 @@ async def _run_pipeline(
     end_date: date,
     bus: EventBus,
 ) -> None:
-    import duckdb
+    import duckdb  # noqa: PLC0415
 
-    from src.application.use_cases.ingest_pipeline import (
+    from src.application.use_cases.ingest_pipeline import (  # noqa: PLC0415
         IngestPipeline,
     )
-    from src.domain.value_objects.platform import Platform
+    from src.domain.value_objects.platform import Platform  # noqa: PLC0415
 
     def on_progress(stage: str, current: int, total: int) -> None:
         stage_enum = (
@@ -316,7 +316,7 @@ async def metrics_middleware(request: Any, call_next: Any) -> Any:
 async def _health() -> HealthResponse:
     db_ok = False
     try:
-        import duckdb
+        import duckdb  # noqa: PLC0415
 
         conn = duckdb.connect(settings.db_path, read_only=True)
         conn.execute("SELECT 1").fetchone()
@@ -362,7 +362,7 @@ async def liveness() -> Response:
 @app.get("/readyz")
 async def readiness() -> Response:
     try:
-        import duckdb
+        import duckdb  # noqa: PLC0415
 
         conn = duckdb.connect(settings.db_path, read_only=True)
         conn.execute("SELECT 1").fetchone()

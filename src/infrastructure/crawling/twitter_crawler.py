@@ -59,7 +59,7 @@ class TwitterCrawler(BaseCrawler):
             }
 
             try:
-                from src.shared.http_retry import async_fetch_with_retry
+                from src.shared.http_retry import async_fetch_with_retry  # noqa: PLC0415
 
                 response = await async_fetch_with_retry(
                     client, "GET", "/tweets/search/recent", params=params
