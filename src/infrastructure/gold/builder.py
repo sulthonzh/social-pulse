@@ -131,8 +131,30 @@ class GoldBuilder:
                     self._gold_post_search_repo.delete_by_search_request(rid)
                     self._gold_daily_repo.delete_by_search_request(rid)
 
+                crawl_row = self._conn.execute(
+                    "SELECT id FROM bronze.bronze_crawl_runs "
+                    "WHERE search_request_id = ? AND status = 'completed' "
+                    "ORDER BY completed_at DESC LIMIT 1",
+                    [rid],
+                ).fetchone()
+                source_crawl_run_id = str(crawl_row[0]) if crawl_row else None
+
+                job_row = self._conn.execute(
+                    "SELECT j.id FROM silver.ai_jobs j "
+                    "JOIN silver.silver_posts sp ON j.silver_post_id = sp.id "
+                    "WHERE sp.search_request_id = ? AND j.status = 'completed' "
+                    "ORDER BY j.completed_at DESC LIMIT 1",
+                    [rid],
+                ).fetchone()
+                enrichment_job_id = str(job_row[0]) if job_row else None
+
+                if last_build is not None:
                     posts_processed = await self._build_post_search.execute(
-                        rid, keyword, since=last_build
+                        rid,
+                        keyword,
+                        since=last_build,
+                        source_crawl_run_id=source_crawl_run_id,
+                        enrichment_job_id=enrichment_job_id,
                     )
                 else:
                     logger.info(
@@ -140,15 +162,26 @@ class GoldBuilder:
                         search_request_id=rid,
                     )
 
-                    posts_processed = await self._build_post_search.execute(rid, keyword)
+                    posts_processed = await self._build_post_search.execute(
+                        rid,
+                        keyword,
+                        source_crawl_run_id=source_crawl_run_id,
+                        enrichment_job_id=enrichment_job_id,
+                    )
 
-                await self._build_campaign_daily.execute(rid)
+                await self._build_campaign_daily.execute(
+                    rid,
+                    source_crawl_run_id=source_crawl_run_id,
+                    enrichment_job_id=enrichment_job_id,
+                )
                 await self._build_campaign_summary.execute(
                     rid,
                     start_date
                     if isinstance(start_date, date)
                     else date.fromisoformat(str(start_date)),
                     end_date if isinstance(end_date, date) else date.fromisoformat(str(end_date)),
+                    source_crawl_run_id=source_crawl_run_id,
+                    enrichment_job_id=enrichment_job_id,
                 )
 
                 self._tracking_repo.record_build(rid, posts_processed)

@@ -48,13 +48,45 @@ async def _build_for_request(
     gold_daily_repo = DuckDBGoldCampaignDailyRepository(conn)
     gold_summary_repo = DuckDBGoldCampaignSummaryRepository(conn)
 
+    crawl_row = conn.execute(
+        "SELECT id FROM bronze.bronze_crawl_runs "
+        "WHERE search_request_id = ? AND status = 'completed' "
+        "ORDER BY completed_at DESC LIMIT 1",
+        [search_request_id],
+    ).fetchone()
+    source_crawl_run_id = str(crawl_row[0]) if crawl_row else None
+
+    job_row = conn.execute(
+        "SELECT j.id FROM silver.ai_jobs j "
+        "JOIN silver.silver_posts sp ON j.silver_post_id = sp.id "
+        "WHERE sp.search_request_id = ? AND j.status = 'completed' "
+        "ORDER BY j.completed_at DESC LIMIT 1",
+        [search_request_id],
+    ).fetchone()
+    enrichment_job_id = str(job_row[0]) if job_row else None
+
     build_post_search = BuildPostSearch(enriched_repo, ai_enrichment_repo, gold_post_search_repo)
     build_daily = BuildCampaignDaily(gold_post_search_repo, gold_daily_repo)
     build_summary = BuildCampaignSummary(gold_post_search_repo, gold_summary_repo)
 
-    await build_post_search.execute(search_request_id, keyword)
-    await build_daily.execute(search_request_id)
-    await build_summary.execute(search_request_id, start_date, end_date)
+    await build_post_search.execute(
+        search_request_id,
+        keyword,
+        source_crawl_run_id=source_crawl_run_id,
+        enrichment_job_id=enrichment_job_id,
+    )
+    await build_daily.execute(
+        search_request_id,
+        source_crawl_run_id=source_crawl_run_id,
+        enrichment_job_id=enrichment_job_id,
+    )
+    await build_summary.execute(
+        search_request_id,
+        start_date,
+        end_date,
+        source_crawl_run_id=source_crawl_run_id,
+        enrichment_job_id=enrichment_job_id,
+    )
 
 
 def cli_main() -> None:

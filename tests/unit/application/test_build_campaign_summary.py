@@ -37,7 +37,7 @@ def _return_summary(summary: GoldCampaignSummary) -> GoldCampaignSummary:
     return summary
 
 
-def _build_use_case():
+def _build_use_case() -> tuple[BuildCampaignSummary, MagicMock, MagicMock]:
     gold_post_search_repo = MagicMock(spec=["get_by_search_request"])
     gold_summary_repo = MagicMock(spec=["save"])
     use_case = BuildCampaignSummary(
@@ -49,7 +49,7 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildCampaignSummary:
-    async def test_execute_builds_summary_from_posts(self):
+    async def test_execute_builds_summary_from_posts(self) -> None:
         use_case, post_repo, summary_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
@@ -85,7 +85,7 @@ class TestBuildCampaignSummary:
         assert set(result.top_hashtags) == {"python", "data"}
         assert result.platforms == ["facebook", "twitter"]
 
-    async def test_execute_handles_missing_confidence(self):
+    async def test_execute_handles_missing_confidence(self) -> None:
         use_case, post_repo, summary_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
@@ -102,7 +102,7 @@ class TestBuildCampaignSummary:
 
         assert result.avg_confidence is None
 
-    async def test_execute_saves_empty_summary_when_no_posts(self):
+    async def test_execute_saves_empty_summary_when_no_posts(self) -> None:
         use_case, post_repo, summary_repo = _build_use_case()
         post_repo.get_by_search_request.return_value = []
         summary_repo.save.side_effect = _return_summary
@@ -116,3 +116,24 @@ class TestBuildCampaignSummary:
         assert result.total_posts == 0
         assert result.keyword == ""
         summary_repo.save.assert_called_once()
+
+    async def test_execute_passes_lineage_to_summary(self) -> None:
+        use_case, post_repo, summary_repo = _build_use_case()
+        search_request_id = uuid4()
+        posts = [
+            _make_gold_post(search_request_id=search_request_id, sentiment="positive"),
+        ]
+        post_repo.get_by_search_request.return_value = posts
+        summary_repo.save.side_effect = _return_summary
+
+        result = await use_case.execute(
+            str(search_request_id),
+            start_date=date(2025, 1, 1),
+            end_date=date(2025, 1, 31),
+            source_crawl_run_id="crawl-999",
+            enrichment_job_id="job-888",
+        )
+
+        assert result.source_crawl_run_id == "crawl-999"
+        assert result.enrichment_job_id == "job-888"
+        assert result.lineage_updated_at is not None

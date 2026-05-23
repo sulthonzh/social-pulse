@@ -30,6 +30,9 @@ class GoldCampaignDaily(BaseModel):
     total_replies: int = 0
     total_views: int = 0
     ai_version: int = 1
+    source_crawl_run_id: str | None = None
+    enrichment_job_id: str | None = None
+    lineage_updated_at: datetime | None = None
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
     )
