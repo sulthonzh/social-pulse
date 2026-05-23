@@ -66,6 +66,9 @@ dev = [
     # E2E Testing
     "playwright>=1.46.0",
 
+    # Pre-commit
+    "pre-commit>=4.0.0",
+
     # Security
     "pip-audit>=2.7.0",
 ]
