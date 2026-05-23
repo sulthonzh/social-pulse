@@ -1,0 +1,14 @@
+# <type>(<scope>): <subject>  [max 72 chars]
+# │       │           │
+# │       │           └─ imperative, lowercase, no period
+# │       └─ optional: api|shared|domain|infra|worker|crawl|gold|dbt|docker|ci
+# └─ feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
+#
+# Body: explain WHY, not WHAT. Wrap at 100 chars.
+# Break after 72 chars in subject.
+#
+# Examples:
+#   feat(api): implement cursor pagination for enriched posts
+#   fix(worker): narrow exception catch to domain error types
+#   ci: install all extras in type-check job for mypy stub resolution
+#   test(gold): add integration tests for incremental build tracking
