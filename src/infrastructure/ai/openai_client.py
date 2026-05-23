@@ -45,7 +45,7 @@ class OpenAIClient:
 
     def _ensure_client(self) -> AsyncOpenAI:
         if self._client is None:
-            from openai import AsyncOpenAI
+            from openai import AsyncOpenAI  # noqa: PLC0415
 
             self._client = AsyncOpenAI(
                 api_key=self._api_key,

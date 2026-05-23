@@ -59,7 +59,7 @@ _db_migrated: bool = False
 
 def enable_wal_mode() -> None:
     """Enable WAL mode for better concurrent read/write performance."""
-    import duckdb
+    import duckdb  # noqa: PLC0415
 
     conn = duckdb.connect(str(settings.db_path))
     try:
@@ -70,9 +70,9 @@ def enable_wal_mode() -> None:
 
 def get_db_connection(read_only: bool = False) -> duckdb.DuckDBPyConnection:
     """Open a DuckDB connection, running migrations once on first call."""
-    import duckdb
+    import duckdb  # noqa: PLC0415
 
-    from src.infrastructure.persistence.migrations import create_all_tables
+    from src.infrastructure.persistence.migrations import create_all_tables  # noqa: PLC0415
 
     global _db_migrated  # noqa: PLW0603
 

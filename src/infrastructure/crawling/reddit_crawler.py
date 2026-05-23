@@ -159,7 +159,7 @@ class RedditCrawler(BaseCrawler):
             params["after"] = after
 
         try:
-            from src.shared.http_retry import async_fetch_with_retry
+            from src.shared.http_retry import async_fetch_with_retry  # noqa: PLC0415
 
             response = await async_fetch_with_retry(client, "GET", "/search.json", params=params)
         except httpx.HTTPStatusError as exc:

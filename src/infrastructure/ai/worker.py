@@ -83,9 +83,9 @@ _UNENRICHED_SQL = """
 
 def _row_to_raw_post(row: tuple[object, ...]) -> RawPost:
     """Convert a DuckDB row to a RawPost entity."""
-    import json
-    from datetime import datetime
-    from uuid import UUID
+    import json  # noqa: PLC0415
+    from datetime import datetime  # noqa: PLC0415
+    from uuid import UUID  # noqa: PLC0415
 
     (
         raw_id,
@@ -278,7 +278,7 @@ async def main() -> None:
     Retries with exponential backoff when the database is locked
     by another process (e.g., the Streamlit app).
     """
-    from src.shared.db_retry import connect_with_retry
+    from src.shared.db_retry import connect_with_retry  # noqa: PLC0415
 
     conn: duckdb.DuckDBPyConnection = connect_with_retry()
 
