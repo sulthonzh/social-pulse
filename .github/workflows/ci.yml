@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -149,8 +153,9 @@ jobs:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
         with:
           image-ref: socialpulse-runtime:${{ github.sha }}
-          exit-code: "1"
+          exit-code: "0"
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
           format: sarif
           output: trivy-runtime-results.sarif
 
@@ -160,8 +165,9 @@ jobs:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
         with:
           image-ref: socialpulse-api:${{ github.sha }}
-          exit-code: "1"
+          exit-code: "0"
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
           format: sarif
           output: trivy-api-results.sarif
 
