@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialpulse-api
+  namespace: socialpulse
+  labels:
+    app.kubernetes.io/name: socialpulse
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialpulse
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialpulse
+        app.kubernetes.io/component: api
+    spec:
+      containers:
+        - name: api
+          image: social-pulse:latest
+          command: ["uv", "run", "uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: socialpulse-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: model-cache
+              mountPath: /app/models
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: socialpulse-data
+        - name: model-cache
+          emptyDir: {}

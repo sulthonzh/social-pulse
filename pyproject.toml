@@ -33,6 +33,7 @@ dependencies = [
     "pydantic-settings>=2.5.0",
     "python-dotenv>=1.0.0",
     "structlog>=24.4.0",
+    "typer>=0.12.0",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +72,9 @@ dev = [
 
     # Security
     "pip-audit>=2.7.0",
+
+    # Load Testing
+    "locust>=2.31.0",
 ]
 
 [project.scripts]
@@ -81,6 +85,7 @@ socialpulse-gold = "src.application.use_cases.build_gold:cli_main"
 socialpulse-purge = "src.infrastructure.crawling.purge:main"
 socialpulse-backup = "src.shared.backup:main"
 socialpulse-maintenance = "src.shared.db_maintenance:main"
+socialpulse-admin = "src.shared.cli:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -130,6 +135,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["S101", "PLR2004", "ERA001"]
+"tests/load/*" = ["S311"]
 "src/**/interfaces.py" = ["PLR0904"]
 
 [tool.ruff.format]
@@ -174,8 +180,23 @@ module = [
     "structlog.*",
     "uvicorn.*",
     "sse_starlette.*",
+    "rich",
+    "rich.*",
+    "typer",
+    "typer.*",
+    "locust.*",
     "yt_dlp.*",
 ]
+
+[[tool.mypy.overrides]]
+module = "src.shared.cli"
+disallow_untyped_decorators = false
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.load.*"
+disallow_untyped_decorators = false
+disallow_subclassing_any = false
 ignore_missing_imports = true
 
 # ============================================================

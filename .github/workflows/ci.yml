@@ -201,3 +201,21 @@ jobs:
 
       - name: Run pip-audit
         run: uv run pip-audit
+
+      - name: Export dependencies for SBOM
+        run: uv export --format requirements-txt > requirements.txt
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          file: requirements.txt
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx
+          path: sbom.spdx.json
+          retention-days: 30
