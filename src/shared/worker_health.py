@@ -18,7 +18,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
 class _HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path != "/health":
             self.send_response(404)
             self.send_header("Content-Type", "application/json")
