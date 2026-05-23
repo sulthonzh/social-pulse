@@ -43,7 +43,7 @@ def _make_summary(**overrides: object) -> GoldCampaignSummary:
 
 @pytest.mark.unit
 class TestDuckDBGoldCampaignSummaryRepository:
-    def test_save_returns_entity_with_id(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_save_returns_entity_with_id(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         result = repo.save(summary)
@@ -51,7 +51,7 @@ class TestDuckDBGoldCampaignSummaryRepository:
 
     def test_get_by_search_request_returns_saved_entity(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summary = _make_summary()
         repo.save(summary)
@@ -62,11 +62,11 @@ class TestDuckDBGoldCampaignSummaryRepository:
 
     def test_get_by_search_request_returns_none_for_nonexistent(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) is None
 
-    def test_get_all_summaries_returns_all(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_all_summaries_returns_all(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         summaries = [_make_summary() for _ in range(3)]
         for s in summaries:
@@ -77,7 +77,7 @@ class TestDuckDBGoldCampaignSummaryRepository:
 
     def test_save_upserts_on_same_search_request_id(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
         sr_id = uuid4()
         original = _make_summary(search_request_id=sr_id, total_posts=50)
@@ -94,9 +94,13 @@ class TestDuckDBGoldCampaignSummaryRepository:
         sr_count = sum(1 for s in all_results if s.search_request_id == sr_id)
         assert sr_count == 1
 
-    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignSummaryRepository(db_with_schema)
-        summary = _make_summary()
+        summary = _make_summary(
+            source_crawl_run_id="crawl-abc",
+            enrichment_job_id="job-def",
+            lineage_updated_at=datetime(2025, 1, 31, 14, 0, 0),
+        )
         repo.save(summary)
 
         found = repo.get_by_search_request(str(summary.search_request_id))
@@ -122,4 +126,7 @@ class TestDuckDBGoldCampaignSummaryRepository:
         assert found.top_topics == summary.top_topics
         assert found.platforms == summary.platforms
         assert found.ai_version == summary.ai_version
+        assert found.source_crawl_run_id == "crawl-abc"
+        assert found.enrichment_job_id == "job-def"
+        assert found.lineage_updated_at == datetime(2025, 1, 31, 14, 0, 0)
         assert found.created_at == summary.created_at

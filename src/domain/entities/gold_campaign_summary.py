@@ -30,6 +30,9 @@ class GoldCampaignSummary(BaseModel):
     top_topics: list[str] = Field(default_factory=list)
     platforms: list[str] = Field(default_factory=list)
     ai_version: int = 1
+    source_crawl_run_id: str | None = None
+    enrichment_job_id: str | None = None
+    lineage_updated_at: datetime | None = None
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
     )

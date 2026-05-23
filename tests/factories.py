@@ -76,6 +76,9 @@ def make_gold_post_search(**overrides: Any) -> GoldPostSearch:
         "search_request_id": uuid4(),
         "keyword": "test",
         "platform": Platform.TWITTER,
+        "source_crawl_run_id": None,
+        "enrichment_job_id": None,
+        "lineage_updated_at": None,
     }
     defaults.update(overrides)
     return GoldPostSearch(**defaults)
@@ -87,6 +90,9 @@ def make_gold_campaign_daily(**overrides: Any) -> GoldCampaignDaily:
         "keyword": "test",
         "platform": Platform.TWITTER,
         "date": date(2024, 1, 15),
+        "source_crawl_run_id": None,
+        "enrichment_job_id": None,
+        "lineage_updated_at": None,
     }
     defaults.update(overrides)
     return GoldCampaignDaily(**defaults)
@@ -98,6 +104,9 @@ def make_gold_campaign_summary(**overrides: Any) -> GoldCampaignSummary:
         "keyword": "test",
         "start_date": date(2024, 1, 1),
         "end_date": date(2024, 1, 31),
+        "source_crawl_run_id": None,
+        "enrichment_job_id": None,
+        "lineage_updated_at": None,
     }
     defaults.update(overrides)
     return GoldCampaignSummary(**defaults)

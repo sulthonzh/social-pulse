@@ -42,17 +42,21 @@ def _make_daily(**overrides: object) -> GoldCampaignDaily:
 
 @pytest.mark.unit
 class TestDuckDBGoldCampaignDailyRepository:
-    def test_save_batch_returns_correct_count(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_save_batch_returns_correct_count(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         records = [_make_daily() for _ in range(3)]
         inserted = repo.save_batch(records)
         assert inserted == 3
 
-    def test_save_batch_empty_returns_zero(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_save_batch_empty_returns_zero(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         assert repo.save_batch([]) == 0
 
-    def test_save_batch_duplicate_returns_zero(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_save_batch_duplicate_returns_zero(
+        self, db_with_schema: duckdb.DuckDBPyConnection
+    ) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         record = _make_daily()
         assert repo.save_batch([record]) == 1
@@ -60,7 +64,7 @@ class TestDuckDBGoldCampaignDailyRepository:
 
     def test_get_by_search_request_returns_matching(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         sr_id = uuid4()
         records = [_make_daily(search_request_id=sr_id, date=date(2025, 1, i)) for i in range(1, 4)]
@@ -71,7 +75,7 @@ class TestDuckDBGoldCampaignDailyRepository:
 
     def test_get_by_search_request_ordered_by_date_asc(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         sr_id = uuid4()
         records = [
@@ -87,11 +91,11 @@ class TestDuckDBGoldCampaignDailyRepository:
 
     def test_get_by_search_request_returns_empty_for_nonexistent(
         self, db_with_schema: duckdb.DuckDBPyConnection
-    ):
+    ) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         assert repo.get_by_search_request(str(uuid4())) == []
 
-    def test_get_volume_trend(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_get_volume_trend(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
         records = [
             _make_daily(keyword="python", date=date(2025, 1, 1), total_posts=5),
@@ -104,9 +108,13 @@ class TestDuckDBGoldCampaignDailyRepository:
         assert trend[0]["total_posts"] == 5
         assert trend[1]["total_posts"] == 10
 
-    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection):
+    def test_round_trip_all_fields_match(self, db_with_schema: duckdb.DuckDBPyConnection) -> None:
         repo = DuckDBGoldCampaignDailyRepository(db_with_schema)
-        record = _make_daily()
+        record = _make_daily(
+            source_crawl_run_id="crawl-789",
+            enrichment_job_id="job-012",
+            lineage_updated_at=datetime(2025, 1, 15, 14, 0, 0),
+        )
         repo.save_batch([record])
 
         results = repo.get_by_search_request(str(record.search_request_id))
@@ -129,4 +137,7 @@ class TestDuckDBGoldCampaignDailyRepository:
         assert found.total_replies == record.total_replies
         assert found.total_views == record.total_views
         assert found.ai_version == record.ai_version
+        assert found.source_crawl_run_id == "crawl-789"
+        assert found.enrichment_job_id == "job-012"
+        assert found.lineage_updated_at == datetime(2025, 1, 15, 14, 0, 0)
         assert found.created_at == record.created_at

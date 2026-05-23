@@ -23,7 +23,8 @@ _INSERT_COLUMNS = (
     "sentiment, sentiment_confidence, topic_label, topic_confidence, language, "
     "hashtags, mentions, "
     "like_count, share_count, reply_count, view_count, "
-    "ai_version, created_at"
+    "ai_version, source_crawl_run_id, enrichment_job_id, lineage_updated_at, "
+    "created_at"
 )
 
 _SELECT_COLUMNS = _INSERT_COLUMNS
@@ -75,6 +76,9 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         raw_reply_count,
         raw_view_count,
         raw_ai_version,
+        raw_source_crawl_run_id,
+        raw_enrichment_job_id,
+        raw_lineage_updated_at,
         raw_created_at,
     ) = row
 
@@ -104,6 +108,9 @@ def _row_to_gold_post_search(row: tuple[object, ...]) -> GoldPostSearch:
         reply_count=int(str(raw_reply_count)),
         view_count=int(str(raw_view_count)),
         ai_version=int(str(raw_ai_version)),
+        source_crawl_run_id=_resolve_str(raw_source_crawl_run_id),
+        enrichment_job_id=_resolve_str(raw_enrichment_job_id),
+        lineage_updated_at=_resolve_datetime(raw_lineage_updated_at),
         created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
@@ -131,6 +138,9 @@ def _post_to_params(post: GoldPostSearch) -> tuple[object, ...]:
         post.reply_count,
         post.view_count,
         post.ai_version,
+        post.source_crawl_run_id,
+        post.enrichment_job_id,
+        post.lineage_updated_at,
         post.created_at,
     )
 
@@ -157,7 +167,7 @@ class DuckDBGoldPostSearchRepository:
             f"""
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
-            VALUES ({",".join(["?"] * 22)})
+            VALUES ({",".join(["?"] * 25)})
             """,
             params,
         )
