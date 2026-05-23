@@ -59,8 +59,11 @@ class TwitterCrawler(BaseCrawler):
             }
 
             try:
-                response = await client.get("/tweets/search/recent", params=params)
-                response.raise_for_status()
+                from src.shared.http_retry import async_fetch_with_retry
+
+                response = await async_fetch_with_retry(
+                    client, "GET", "/tweets/search/recent", params=params
+                )
             except httpx.HTTPStatusError as exc:
                 logger.error(
                     "twitter_api_error status=%s error=HTTP error response",

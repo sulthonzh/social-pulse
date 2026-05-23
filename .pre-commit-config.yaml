@@ -15,6 +15,8 @@ repos:
           - pydantic-settings
           - structlog
           - duckdb
+          - httpx
+          - pytest-asyncio
         args: [--ignore-missing-imports, --no-error-summary]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks

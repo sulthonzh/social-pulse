@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     retention_days: int = 90
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_cooldown_seconds: int = 60
+    http_retry_max_retries: int = 3
+    http_retry_base_delay: float = 1.0
 
     api_key: str = ""
     rate_limit_per_minute: int = 60
@@ -50,7 +52,7 @@ _db_migrated: bool = False
 
 def enable_wal_mode() -> None:
     """Enable WAL mode for better concurrent read/write performance."""
-    import duckdb  # noqa: PLC0415
+    import duckdb
 
     conn = duckdb.connect(str(settings.db_path))
     try:
@@ -61,9 +63,9 @@ def enable_wal_mode() -> None:
 
 def get_db_connection(read_only: bool = False) -> duckdb.DuckDBPyConnection:
     """Open a DuckDB connection, running migrations once on first call."""
-    import duckdb  # noqa: PLC0415
+    import duckdb
 
-    from src.infrastructure.persistence.migrations import create_all_tables  # noqa: PLC0415
+    from src.infrastructure.persistence.migrations import create_all_tables
 
     global _db_migrated  # noqa: PLW0603
 
