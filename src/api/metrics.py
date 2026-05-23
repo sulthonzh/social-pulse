@@ -99,6 +99,27 @@ class MetricsCollector:
                 "errors_by_type": dict(self._error_counts),
             }
 
+    def generate_prometheus_text(self) -> str:
+        """Generate metrics in Prometheus text exposition format."""
+        snapshot = self.get_snapshot()
+        lines: list[str] = []
+        lines.append("# HELP socialpulse_uptime_seconds Process uptime in seconds")
+        lines.append("# TYPE socialpulse_uptime_seconds gauge")
+        lines.append(f"socialpulse_uptime_seconds {snapshot['uptime_seconds']:.2f}")
+
+        lines.append("# HELP socialpulse_pipeline_total Pipeline operation counters")
+        lines.append("# TYPE socialpulse_pipeline_total counter")
+        for name, value in snapshot["counters"].items():
+            lines.append(f'socialpulse_pipeline_total{{operation="{name}"}} {value}')
+
+        lines.append("# HELP socialpulse_errors_total Error counts by type")
+        lines.append("# TYPE socialpulse_errors_total counter")
+        for error_type, count in snapshot["errors_by_type"].items():
+            lines.append(f'socialpulse_errors_total{{error_type="{error_type}"}} {count}')
+
+        lines.append("")
+        return "\n".join(lines)
+
     def reset(self) -> None:
         """Reset all counters (useful for testing)."""
         with self._lock:
