@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     crawl_worker_health_port: int = 8082
     gold_builder_health_port: int = 8083
 
+    backup_max_backups: int = 7
+    backup_max_age_days: int = 30
+
 
 settings = Settings()
 
