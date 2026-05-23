@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import structlog
 
+from src.application.validators import RawPostValidator
 from src.domain.entities.crawl_run import CrawlRun
 from src.domain.value_objects.crawl_status import CrawlStatus
 
@@ -49,6 +50,8 @@ class IngestCrawlRun:
                 end_date=saved_request.end_date,
                 platform=saved_request.platform,
             )
+
+            raw_posts = RawPostValidator.validate_batch(raw_posts)
 
             posts = [
                 post.model_copy(
