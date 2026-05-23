@@ -146,3 +146,98 @@ class TestMiddlewareCounters:
             await client.get("/api/health")
             snapshot = metrics.get_snapshot()
             assert snapshot["counters"]["api_requests_total"] >= 1
+
+
+class TestPrometheusMetricsEndpoint:
+    @pytest.mark.asyncio
+    async def test_prometheus_endpoint_returns_200(self) -> None:
+        metrics.reset()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/metrics")
+            assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_prometheus_content_type_is_text_plain(self) -> None:
+        metrics.reset()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/metrics")
+            assert "text/plain" in response.headers["content-type"]
+
+    @pytest.mark.asyncio
+    async def test_prometheus_output_has_help_and_type_comments(self) -> None:
+        metrics.reset()
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/metrics")
+            body = response.text
+            assert "# HELP " in body
+            assert "# TYPE " in body
+
+    @pytest.mark.asyncio
+    async def test_prometheus_output_contains_pipeline_counters(self) -> None:
+        metrics.reset()
+        metrics.increment("crawls_started", 5)
+        metrics.increment("posts_fetched", 100)
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/metrics")
+            body = response.text
+            assert "socialpulse_pipeline_total" in body
+            assert 'operation="crawls_started"' in body
+            assert 'operation="posts_fetched"' in body
+
+    def test_generate_prometheus_text_returns_valid_format(self) -> None:
+        collector = MetricsCollector()
+        collector.reset()
+        text = collector.generate_prometheus_text()
+        assert "# HELP socialpulse_uptime_seconds" in text
+        assert "# TYPE socialpulse_uptime_seconds gauge" in text
+        assert "socialpulse_uptime_seconds " in text
+        assert "# HELP socialpulse_pipeline_total" in text
+        assert "# TYPE socialpulse_pipeline_total counter" in text
+        assert "# HELP socialpulse_errors_total" in text
+        assert "# TYPE socialpulse_errors_total counter" in text
+
+    def test_generate_prometheus_text_contains_all_counter_names(self) -> None:
+        collector = MetricsCollector()
+        collector.reset()
+        text = collector.generate_prometheus_text()
+        expected_counters = [
+            "crawls_started",
+            "crawls_completed",
+            "crawls_failed",
+            "posts_fetched",
+            "enrichments_started",
+            "enrichments_completed",
+            "enrichments_failed",
+            "gold_builds_started",
+            "gold_builds_completed",
+            "gold_builds_failed",
+            "api_requests_total",
+            "api_requests_errors",
+        ]
+        for name in expected_counters:
+            assert f'operation="{name}"' in text
+
+    def test_generate_prometheus_text_contains_uptime_gauge(self) -> None:
+        collector = MetricsCollector()
+        collector.reset()
+        text = collector.generate_prometheus_text()
+        lines = text.strip().split("\n")
+        uptime_lines = [line for line in lines if line.startswith("socialpulse_uptime_seconds ")]
+        assert len(uptime_lines) == 1
+        value = float(uptime_lines[0].split()[-1])
+        assert value >= 0.0
+
+    def test_generate_prometheus_text_handles_empty_errors(self) -> None:
+        collector = MetricsCollector()
+        collector.reset()
+        text = collector.generate_prometheus_text()
+        assert "# HELP socialpulse_errors_total" in text
+        lines_after = text.split("# HELP socialpulse_errors_total")[1].split("\n")
+        metric_lines = [
+            line for line in lines_after if line.startswith("socialpulse_errors_total{")
+        ]
+        assert len(metric_lines) == 0

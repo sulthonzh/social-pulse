@@ -17,6 +17,7 @@ repos:
           - duckdb
           - httpx
           - pytest-asyncio
+          - fastapi
         args: [--ignore-missing-imports, --no-error-summary]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
