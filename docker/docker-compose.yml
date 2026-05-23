@@ -110,6 +110,8 @@ services:
       - SOCIALPULSE_TOPIC_PROVIDER=${SOCIALPULSE_TOPIC_PROVIDER:-}
       - SOCIALPULSE_LANGUAGE_PROVIDER=${SOCIALPULSE_LANGUAGE_PROVIDER:-}
       - SOCIALPULSE_WORKER_HEALTH_PORT=${SOCIALPULSE_WORKER_HEALTH_PORT:-8081}
+      - SOCIALPULSE_BACKUP_MAX_BACKUPS=${SOCIALPULSE_BACKUP_MAX_BACKUPS:-7}
+      - SOCIALPULSE_BACKUP_MAX_AGE_DAYS=${SOCIALPULSE_BACKUP_MAX_AGE_DAYS:-30}
     restart: unless-stopped
     profiles:
       - pipeline
@@ -141,6 +143,8 @@ services:
       - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
       - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
       - SOCIALPULSE_TWITTER_BEARER_TOKEN=${SOCIALPULSE_TWITTER_BEARER_TOKEN:-}
+      - SOCIALPULSE_BACKUP_MAX_BACKUPS=${SOCIALPULSE_BACKUP_MAX_BACKUPS:-7}
+      - SOCIALPULSE_BACKUP_MAX_AGE_DAYS=${SOCIALPULSE_BACKUP_MAX_AGE_DAYS:-30}
     restart: unless-stopped
     profiles:
       - pipeline
@@ -174,6 +178,8 @@ services:
       - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
       - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
       - SOCIALPULSE_GOLD_REBUILD_BATCH_SIZE=${SOCIALPULSE_GOLD_REBUILD_BATCH_SIZE:-10000}
+      - SOCIALPULSE_BACKUP_MAX_BACKUPS=${SOCIALPULSE_BACKUP_MAX_BACKUPS:-7}
+      - SOCIALPULSE_BACKUP_MAX_AGE_DAYS=${SOCIALPULSE_BACKUP_MAX_AGE_DAYS:-30}
     profiles:
       - pipeline
     healthcheck:
@@ -188,6 +194,45 @@ services:
       resources:
         limits:
           memory: 2G
+
+  # ============================================================
+  # Backup Service
+  # ============================================================
+
+  backup:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: socialpulse-backup
+    volumes:
+      - ../src:/app/src
+      - ../data:/app/data
+    environment:
+      - SOCIALPULSE_ENV=${SOCIALPULSE_ENV:-production}
+      - SOCIALPULSE_DB_PATH=${SOCIALPULSE_DB_PATH:-/app/data/socialpulse.duckdb}
+      - SOCIALPULSE_LOG_LEVEL=${SOCIALPULSE_LOG_LEVEL:-INFO}
+      - SOCIALPULSE_BACKUP_MAX_BACKUPS=${SOCIALPULSE_BACKUP_MAX_BACKUPS:-7}
+      - SOCIALPULSE_BACKUP_MAX_AGE_DAYS=${SOCIALPULSE_BACKUP_MAX_AGE_DAYS:-30}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          python -m src.shared.backup --rotate $$SOCIALPULSE_DB_PATH --backup-dir /app/data/backups --max-backups $${SOCIALPULSE_BACKUP_MAX_BACKUPS:-7} --max-age-days $${SOCIALPULSE_BACKUP_MAX_AGE_DAYS:-30}
+          sleep 86400
+        done
+    restart: unless-stopped
+    profiles:
+      - pipeline
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - socialpulse
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # ============================================================
   # dbt Services
