@@ -6,19 +6,14 @@ import structlog
 
 from src.domain.entities.sentiment_result import SentimentResult
 from src.domain.value_objects.sentiment_label import SentimentLabel
+from src.shared.prompts import PromptRegistry
 
 if TYPE_CHECKING:
     from src.infrastructure.ai.openai_client import OpenAIClient
 
 logger = structlog.get_logger()
 
-_SYSTEM_PROMPT = (
-    "You are a sentiment classifier. "
-    'Classify the sentiment of the user text as one of: "positive", "negative", "neutral". '
-    "Respond with a JSON object with exactly two keys: "
-    '"label" (one of "positive", "negative", "neutral") '
-    'and "confidence" (a float between 0.0 and 1.0).'
-)
+_SYSTEM_PROMPT = PromptRegistry.get_prompt("sentiment")
 
 _UNKNOWN_RESULT = SentimentResult(
     label=SentimentLabel.NEUTRAL,
@@ -31,7 +26,7 @@ _UNKNOWN_RESULT = SentimentResult(
 def _parse_response(data: dict[str, object], model: str) -> SentimentResult:
     raw_label = str(data.get("label", "neutral")).lower().strip()
     raw_confidence = data.get("confidence", 0.0)
-    confidence = float(raw_confidence) if isinstance(raw_confidence, (int, float)) else 0.0
+    confidence = float(raw_confidence) if isinstance(raw_confidence, int | float) else 0.0
     confidence = max(0.0, min(1.0, confidence))
 
     try:

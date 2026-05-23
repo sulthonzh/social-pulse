@@ -75,6 +75,8 @@ services:
       - SOCIALPULSE_API_KEY=${SOCIALPULSE_API_KEY:-}
       - SOCIALPULSE_RATE_LIMIT_PER_MINUTE=${SOCIALPULSE_RATE_LIMIT_PER_MINUTE:-60}
     healthcheck:
+      # Liveness: /healthz | Readiness: /readyz (Kubernetes probes)
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -107,11 +109,12 @@ services:
       - SOCIALPULSE_SENTIMENT_PROVIDER=${SOCIALPULSE_SENTIMENT_PROVIDER:-}
       - SOCIALPULSE_TOPIC_PROVIDER=${SOCIALPULSE_TOPIC_PROVIDER:-}
       - SOCIALPULSE_LANGUAGE_PROVIDER=${SOCIALPULSE_LANGUAGE_PROVIDER:-}
+      - SOCIALPULSE_WORKER_HEALTH_PORT=${SOCIALPULSE_WORKER_HEALTH_PORT:-8081}
     restart: unless-stopped
     profiles:
       - pipeline
     healthcheck:
-      test: ["CMD", "python", "-c", "import os; os.kill(1, 0)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 60s
       timeout: 10s
       retries: 3

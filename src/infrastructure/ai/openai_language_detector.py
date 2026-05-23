@@ -5,19 +5,14 @@ from typing import TYPE_CHECKING
 import structlog
 
 from src.domain.entities.language_result import LanguageResult
+from src.shared.prompts import PromptRegistry
 
 if TYPE_CHECKING:
     from src.infrastructure.ai.openai_client import OpenAIClient
 
 logger = structlog.get_logger()
 
-_SYSTEM_PROMPT = (
-    "You are a language detector. "
-    "Given the user text, detect the language and respond with a JSON object "
-    "with exactly two keys: "
-    '"language_code" (ISO 639-1 two-letter code, e.g. "en", "id", "fr") '
-    'and "confidence" (float between 0.0 and 1.0).'
-)
+_SYSTEM_PROMPT = PromptRegistry.get_prompt("language")
 
 _UNKNOWN_RESULT = LanguageResult(
     language_code="unknown",
@@ -30,7 +25,7 @@ _UNKNOWN_RESULT = LanguageResult(
 def _parse_response(data: dict[str, object], model: str) -> LanguageResult:
     language_code = str(data.get("language_code", "unknown")).strip().lower() or "unknown"
     raw_confidence = data.get("confidence", 0.0)
-    confidence = float(raw_confidence) if isinstance(raw_confidence, (int, float)) else 0.0
+    confidence = float(raw_confidence) if isinstance(raw_confidence, int | float) else 0.0
     confidence = max(0.0, min(1.0, confidence))
 
     version = model.rsplit("/", maxsplit=1)[-1] if "/" in model else model

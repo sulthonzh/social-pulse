@@ -5,19 +5,14 @@ from typing import TYPE_CHECKING
 import structlog
 
 from src.domain.entities.topic_result import TopicResult
+from src.shared.prompts import PromptRegistry
 
 if TYPE_CHECKING:
     from src.infrastructure.ai.openai_client import OpenAIClient
 
 logger = structlog.get_logger()
 
-_SYSTEM_PROMPT = (
-    "You are a topic extractor. "
-    "Given the user text, extract the primary topic as a short label (1-4 words) "
-    "and a confidence score between 0.0 and 1.0. "
-    "Respond with a JSON object with exactly two keys: "
-    '"topic_label" (string) and "confidence" (float).'
-)
+_SYSTEM_PROMPT = PromptRegistry.get_prompt("topic")
 
 _UNKNOWN_RESULT = TopicResult(
     topic_label="unknown",
@@ -30,7 +25,7 @@ _UNKNOWN_RESULT = TopicResult(
 def _parse_response(data: dict[str, object], model: str) -> TopicResult:
     topic_label = str(data.get("topic_label", "unknown")).strip() or "unknown"
     raw_confidence = data.get("confidence", 0.0)
-    confidence = float(raw_confidence) if isinstance(raw_confidence, (int, float)) else 0.0
+    confidence = float(raw_confidence) if isinstance(raw_confidence, int | float) else 0.0
     confidence = max(0.0, min(1.0, confidence))
 
     version = model.rsplit("/", maxsplit=1)[-1] if "/" in model else model
