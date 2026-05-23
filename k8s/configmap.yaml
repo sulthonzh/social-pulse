@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: socialpulse-config
+  namespace: socialpulse
+  labels:
+    app.kubernetes.io/name: socialpulse
+    app.kubernetes.io/component: config
+data:
+  SOCIALPULSE_ENV: "production"
+  SOCIALPULSE_DB_PATH: "/app/data/socialpulse.duckdb"
+  SOCIALPULSE_LOG_LEVEL: "INFO"
+  SOCIALPULSE_HF_MODEL_CACHE_DIR: "/app/models"
+  SOCIALPULSE_SENTIMENT_MODEL: "cardiffnlp/twitter-roberta-base-sentiment-latest"
+  SOCIALPULSE_TOPIC_MODEL: "all-MiniLM-L6-v2"
+  SOCIALPULSE_RATE_LIMIT_PER_MINUTE: "60"
+  SOCIALPULSE_AI_MAX_RETRIES: "3"
+  SOCIALPULSE_GOLD_REBUILD_BATCH_SIZE: "10000"
+  SOCIALPULSE_BACKUP_MAX_BACKUPS: "7"
+  SOCIALPULSE_BACKUP_MAX_AGE_DAYS: "30"
+  SOCIALPULSE_WORKER_HEALTH_PORT: "8081"
