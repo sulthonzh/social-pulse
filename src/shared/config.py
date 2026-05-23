@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     max_crawl_results: int = 1000
     crawl_timeout_seconds: int = 30
     ai_max_retries: int = 3
+    ai_daily_token_budget: int = 1_000_000
+    ai_hourly_token_budget: int = 100_000
+    ai_max_tokens_per_request: int = 4_000
     gold_rebuild_batch_size: int = 10000
     retention_days: int = 90
     circuit_breaker_failure_threshold: int = 5
@@ -43,6 +46,10 @@ class Settings(BaseSettings):
 
     api_key: str = ""
     rate_limit_per_minute: int = 60
+
+    worker_health_port: int = 8081
+    crawl_worker_health_port: int = 8082
+    gold_builder_health_port: int = 8083
 
 
 settings = Settings()
