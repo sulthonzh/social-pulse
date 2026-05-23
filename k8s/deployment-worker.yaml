@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socialpulse-worker
+  namespace: socialpulse
+  labels:
+    app.kubernetes.io/name: socialpulse
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: socialpulse
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: socialpulse
+        app.kubernetes.io/component: worker
+    spec:
+      containers:
+        - name: worker
+          image: social-pulse:latest
+          command: ["uv", "run", "python", "-m", "src.infrastructure.ai.worker"]
+          envFrom:
+            - configMapRef:
+                name: socialpulse-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: model-cache
+              mountPath: /app/models
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: socialpulse-data
+        - name: model-cache
+          emptyDir: {}
