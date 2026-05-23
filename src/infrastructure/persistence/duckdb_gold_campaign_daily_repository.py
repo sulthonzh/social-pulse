@@ -22,7 +22,8 @@ _INSERT_COLUMNS = (
     "total_posts, positive_count, negative_count, neutral_count, "
     "avg_confidence, top_hashtags, top_topics, "
     "total_likes, total_shares, total_replies, total_views, "
-    "ai_version, created_at"
+    "ai_version, source_crawl_run_id, enrichment_job_id, lineage_updated_at, "
+    "created_at"
 )
 
 _SELECT_COLUMNS = _INSERT_COLUMNS
@@ -72,6 +73,9 @@ def _row_to_gold_campaign_daily(row: tuple[object, ...]) -> GoldCampaignDaily:
         raw_total_replies,
         raw_total_views,
         raw_ai_version,
+        raw_source_crawl_run_id,
+        raw_enrichment_job_id,
+        raw_lineage_updated_at,
         raw_created_at,
     ) = row
 
@@ -93,6 +97,11 @@ def _row_to_gold_campaign_daily(row: tuple[object, ...]) -> GoldCampaignDaily:
         total_replies=int(str(raw_total_replies)),
         total_views=int(str(raw_total_views)),
         ai_version=int(str(raw_ai_version)),
+        source_crawl_run_id=str(raw_source_crawl_run_id)
+        if raw_source_crawl_run_id is not None
+        else None,
+        enrichment_job_id=str(raw_enrichment_job_id) if raw_enrichment_job_id is not None else None,
+        lineage_updated_at=_resolve_datetime(raw_lineage_updated_at),
         created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
@@ -116,6 +125,9 @@ def _record_to_params(record: GoldCampaignDaily) -> tuple[object, ...]:
         record.total_replies,
         record.total_views,
         record.ai_version,
+        record.source_crawl_run_id,
+        record.enrichment_job_id,
+        record.lineage_updated_at,
         record.created_at,
     )
 
@@ -142,7 +154,7 @@ class DuckDBGoldCampaignDailyRepository:
             f"""
             INSERT OR IGNORE INTO {_TABLE}
                 ({_INSERT_COLUMNS})
-            VALUES ({",".join(["?"] * 18)})
+            VALUES ({",".join(["?"] * 21)})
             """,
             params,
         )

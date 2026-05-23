@@ -33,7 +33,7 @@ def _make_gold_post(**overrides: object) -> GoldPostSearch:
     return GoldPostSearch.model_validate(defaults)
 
 
-def _build_use_case():
+def _build_use_case() -> tuple[BuildCampaignDaily, MagicMock, MagicMock]:
     gold_post_search_repo = MagicMock(spec=["get_by_search_request"])
     gold_daily_repo = MagicMock(spec=["save_batch"])
     use_case = BuildCampaignDaily(
@@ -45,7 +45,7 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildCampaignDaily:
-    async def test_execute_aggregates_posts_by_date_and_platform(self):
+    async def test_execute_aggregates_posts_by_date_and_platform(self) -> None:
         use_case, post_repo, daily_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
@@ -78,7 +78,7 @@ class TestBuildCampaignDaily:
         assert first_day.total_views == 200
         assert set(first_day.top_hashtags) == {"python", "data"}
 
-    async def test_execute_skips_posts_without_posted_at(self):
+    async def test_execute_skips_posts_without_posted_at(self) -> None:
         use_case, post_repo, daily_repo = _build_use_case()
         search_request_id = uuid4()
         posts = [
@@ -94,7 +94,7 @@ class TestBuildCampaignDaily:
         records: list[GoldCampaignDaily] = daily_repo.save_batch.call_args[0][0]
         assert len(records) == 1
 
-    async def test_execute_returns_zero_when_no_posts(self):
+    async def test_execute_returns_zero_when_no_posts(self) -> None:
         use_case, post_repo, daily_repo = _build_use_case()
         post_repo.get_by_search_request.return_value = []
 
@@ -102,3 +102,24 @@ class TestBuildCampaignDaily:
 
         assert result == 0
         daily_repo.save_batch.assert_not_called()
+
+    async def test_execute_passes_lineage_to_daily_records(self) -> None:
+        use_case, post_repo, daily_repo = _build_use_case()
+        search_request_id = uuid4()
+        posts = [
+            _make_gold_post(search_request_id=search_request_id, sentiment="positive"),
+        ]
+        post_repo.get_by_search_request.return_value = posts
+        daily_repo.save_batch.return_value = 1
+
+        await use_case.execute(
+            str(search_request_id),
+            source_crawl_run_id="crawl-xyz",
+            enrichment_job_id="job-uvw",
+        )
+
+        records: list[GoldCampaignDaily] = daily_repo.save_batch.call_args[0][0]
+        assert len(records) == 1
+        assert records[0].source_crawl_run_id == "crawl-xyz"
+        assert records[0].enrichment_job_id == "job-uvw"
+        assert records[0].lineage_updated_at is not None

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION: int = 4
+SCHEMA_VERSION: int = 5
 
 
 @dataclass(frozen=True)
@@ -113,6 +113,94 @@ _MIGRATIONS: list[Migration] = [
             "DROP INDEX IF EXISTS silver.idx_silver_enrichment_created_at;\n"
             "DROP INDEX IF EXISTS gold.idx_gold_post_search_created_at;\n"
             "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_created_at"
+        ),
+    ),
+    Migration(
+        version=5,
+        description="add data lineage tracking columns to gold tables",
+        up_sql=(
+            "ALTER TABLE gold.gold_post_search"
+            " ADD COLUMN IF NOT EXISTS source_crawl_run_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " ADD COLUMN IF NOT EXISTS enrichment_job_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " ADD COLUMN IF NOT EXISTS lineage_updated_at TIMESTAMP;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " ADD COLUMN IF NOT EXISTS source_crawl_run_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " ADD COLUMN IF NOT EXISTS enrichment_job_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " ADD COLUMN IF NOT EXISTS lineage_updated_at TIMESTAMP;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " ADD COLUMN IF NOT EXISTS source_crawl_run_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " ADD COLUMN IF NOT EXISTS enrichment_job_id VARCHAR;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " ADD COLUMN IF NOT EXISTS lineage_updated_at TIMESTAMP"
+        ),
+        down_sql=(
+            # DuckDB blocks ALTER TABLE DROP COLUMN while indexes exist,
+            # so we must drop all indexes first, alter, then recreate.
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_keyword;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_sentiment;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_platform;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_posted;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_topic;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_lang;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_request;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_post_search_created_at;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " DROP COLUMN source_crawl_run_id;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " DROP COLUMN enrichment_job_id;\n"
+            "ALTER TABLE gold.gold_post_search"
+            " DROP COLUMN lineage_updated_at;\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_keyword"
+            " ON gold.gold_post_search(keyword);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_sentiment"
+            " ON gold.gold_post_search(sentiment);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_platform"
+            " ON gold.gold_post_search(platform);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_posted"
+            " ON gold.gold_post_search(posted_at DESC);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_topic"
+            " ON gold.gold_post_search(topic_label);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_lang"
+            " ON gold.gold_post_search(language);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_request"
+            " ON gold.gold_post_search(search_request_id);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_post_search_created_at"
+            " ON gold.gold_post_search(created_at);\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_keyword;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_date;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_request;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_daily_created_at;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " DROP COLUMN source_crawl_run_id;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " DROP COLUMN enrichment_job_id;\n"
+            "ALTER TABLE gold.gold_campaign_daily"
+            " DROP COLUMN lineage_updated_at;\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_keyword"
+            " ON gold.gold_campaign_daily(keyword);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_date"
+            " ON gold.gold_campaign_daily(date DESC);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_request"
+            " ON gold.gold_campaign_daily(search_request_id);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_daily_created_at"
+            " ON gold.gold_campaign_daily(created_at);\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_summary_keyword;\n"
+            "DROP INDEX IF EXISTS gold.idx_gold_campaign_summary_dates;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " DROP COLUMN source_crawl_run_id;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " DROP COLUMN enrichment_job_id;\n"
+            "ALTER TABLE gold.gold_campaign_summary"
+            " DROP COLUMN lineage_updated_at;\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_summary_keyword"
+            " ON gold.gold_campaign_summary(keyword);\n"
+            "CREATE INDEX IF NOT EXISTS idx_gold_campaign_summary_dates"
+            " ON gold.gold_campaign_summary(start_date, end_date)"
         ),
     ),
 ]

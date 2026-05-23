@@ -51,7 +51,7 @@ def _make_ai_enrichment(post_id: UUID, **overrides: object) -> AIEnrichment:
     return AIEnrichment.model_validate(defaults)
 
 
-def _build_use_case():
+def _build_use_case() -> tuple[BuildPostSearch, MagicMock, MagicMock, MagicMock]:
     enriched_post_repo = MagicMock(
         spec=[
             "get_by_search",
@@ -72,7 +72,7 @@ def _build_use_case():
 
 @pytest.mark.unit
 class TestBuildPostSearch:
-    async def test_execute_materializes_posts_with_ai_enrichment(self):
+    async def test_execute_materializes_posts_with_ai_enrichment(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         post = _make_enriched_post(search_request_id=search_request_id)
@@ -99,7 +99,7 @@ class TestBuildPostSearch:
         assert saved.language == "en"
         assert saved.hashtags == ["data", "engineering"]
 
-    async def test_execute_handles_missing_ai_enrichment(self):
+    async def test_execute_handles_missing_ai_enrichment(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         post = _make_enriched_post(search_request_id=search_request_id)
@@ -117,7 +117,7 @@ class TestBuildPostSearch:
         assert saved.mentions == []
         assert saved.ai_version == 1
 
-    async def test_execute_returns_zero_when_no_posts(self):
+    async def test_execute_returns_zero_when_no_posts(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         enriched_repo.get_by_search_paginated.return_value = []
 
@@ -127,7 +127,7 @@ class TestBuildPostSearch:
         ai_repo.get_by_posts.assert_not_called()
         gold_repo.save_batch.assert_not_called()
 
-    async def test_execute_with_since_fetches_enriched_posts_since(self):
+    async def test_execute_with_since_fetches_enriched_posts_since(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         post = _make_enriched_post(search_request_id=search_request_id)
@@ -149,7 +149,7 @@ class TestBuildPostSearch:
         assert len(saved_posts) == 1
         assert saved_posts[0].keyword == "python"
 
-    async def test_execute_with_since_returns_zero_when_no_new_posts(self):
+    async def test_execute_with_since_returns_zero_when_no_new_posts(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         since = datetime(2025, 6, 1, 0, 0, 0)
 
@@ -162,7 +162,7 @@ class TestBuildPostSearch:
         ai_repo.get_by_posts.assert_not_called()
         gold_repo.save_batch.assert_not_called()
 
-    async def test_execute_without_since_uses_get_by_search_paginated(self):
+    async def test_execute_without_since_uses_get_by_search_paginated(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         post = _make_enriched_post(search_request_id=search_request_id)
@@ -180,7 +180,7 @@ class TestBuildPostSearch:
         )
         enriched_repo.get_enriched_since_paginated.assert_not_called()
 
-    async def test_execute_loops_over_multiple_batches(self):
+    async def test_execute_loops_over_multiple_batches(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         full_batch = [
@@ -198,7 +198,7 @@ class TestBuildPostSearch:
         assert enriched_repo.get_by_search_paginated.call_count == 2
         assert gold_repo.save_batch.call_count == 2
 
-    async def test_execute_loops_correctly_with_batch_size_posts(self):
+    async def test_execute_loops_correctly_with_batch_size_posts(self) -> None:
         use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
         search_request_id = uuid4()
         full_batch = [
@@ -218,3 +218,25 @@ class TestBuildPostSearch:
         second_call = enriched_repo.get_by_search_paginated.call_args_list[1]
         assert first_call.kwargs["offset"] == 0
         assert second_call.kwargs["offset"] == BATCH_SIZE
+
+    async def test_execute_passes_lineage_to_gold_posts(self) -> None:
+        use_case, enriched_repo, ai_repo, gold_repo = _build_use_case()
+        search_request_id = uuid4()
+        post = _make_enriched_post(search_request_id=search_request_id)
+        enrichment = _make_ai_enrichment(post.id)
+        enriched_repo.get_by_search_paginated.return_value = [post]
+        ai_repo.get_by_posts.return_value = {str(post.id): enrichment}
+        gold_repo.save_batch.return_value = 1
+
+        await use_case.execute(
+            str(search_request_id),
+            keyword="python",
+            source_crawl_run_id="crawl-abc",
+            enrichment_job_id="job-def",
+        )
+
+        saved_posts: list[GoldPostSearch] = gold_repo.save_batch.call_args[0][0]
+        saved = saved_posts[0]
+        assert saved.source_crawl_run_id == "crawl-abc"
+        assert saved.enrichment_job_id == "job-def"
+        assert saved.lineage_updated_at is not None

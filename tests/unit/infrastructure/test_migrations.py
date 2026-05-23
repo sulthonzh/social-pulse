@@ -30,14 +30,14 @@ class TestForwardMigrations:
             "SELECT version FROM config.schema_migrations ORDER BY version"
         ).fetchall()
         versions = [r[0] for r in rows]
-        assert versions == [2, 3, 4]
+        assert versions == [2, 3, 4, 5]
 
     def test_run_migrations_idempotent(self, db_connection: duckdb.DuckDBPyConnection) -> None:
         create_all_tables(db_connection)
         run_migrations(db_connection)
         rows = db_connection.execute("SELECT COUNT(*) FROM config.schema_migrations").fetchone()
         assert rows is not None
-        assert rows[0] == 3
+        assert rows[0] == 4
 
     def test_gold_build_tracking_exists(self, db_connection: duckdb.DuckDBPyConnection) -> None:
         create_all_tables(db_connection)
@@ -57,7 +57,7 @@ class TestGetAppliedVersion:
 
     def test_returns_max_applied_version(self, db_connection: duckdb.DuckDBPyConnection) -> None:
         create_all_tables(db_connection)
-        assert get_applied_version(db_connection) == 4
+        assert get_applied_version(db_connection) == 5
 
 
 @pytest.mark.unit

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import structlog
@@ -34,7 +35,14 @@ class BuildCampaignDaily:
         self._gold_post_search_repo = gold_post_search_repo
         self._gold_daily_repo = gold_daily_repo
 
-    async def execute(self, search_request_id: str) -> int:
+    async def execute(
+        self,
+        search_request_id: str,
+        *,
+        source_crawl_run_id: str | None = None,
+        enrichment_job_id: str | None = None,
+    ) -> int:
+        lineage_ts = datetime.now(UTC)
         posts = self._gold_post_search_repo.get_by_search_request(search_request_id)
 
         if not posts:
@@ -87,6 +95,9 @@ class BuildCampaignDaily:
                 total_shares=sum(p.share_count for p in typed_posts),
                 total_replies=sum(p.reply_count for p in typed_posts),
                 total_views=sum(p.view_count for p in typed_posts),
+                source_crawl_run_id=source_crawl_run_id,
+                enrichment_job_id=enrichment_job_id,
+                lineage_updated_at=lineage_ts,
             )
             records.append(record)
 

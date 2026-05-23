@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import structlog
@@ -37,7 +38,11 @@ class BuildCampaignSummary:
         search_request_id: str,
         start_date: date,
         end_date: date,
+        *,
+        source_crawl_run_id: str | None = None,
+        enrichment_job_id: str | None = None,
     ) -> GoldCampaignSummary:
+        lineage_ts = datetime.now(UTC)
         posts = self._gold_post_search_repo.get_by_search_request(search_request_id)
 
         total = len(posts)
@@ -49,6 +54,9 @@ class BuildCampaignSummary:
                 keyword="",
                 start_date=start_date,
                 end_date=end_date,
+                source_crawl_run_id=source_crawl_run_id,
+                enrichment_job_id=enrichment_job_id,
+                lineage_updated_at=lineage_ts,
             )
             return self._gold_summary_repo.save(summary)
 
@@ -92,6 +100,9 @@ class BuildCampaignSummary:
             top_hashtags=_top_n(all_hashtags),
             top_topics=_top_n(all_topics),
             platforms=sorted(platform_set),
+            source_crawl_run_id=source_crawl_run_id,
+            enrichment_job_id=enrichment_job_id,
+            lineage_updated_at=lineage_ts,
         )
 
         saved = self._gold_summary_repo.save(summary)

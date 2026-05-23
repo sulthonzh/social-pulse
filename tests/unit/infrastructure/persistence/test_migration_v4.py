@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import duckdb
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 import pytest
 from src.infrastructure.persistence.migrations import (
-    SCHEMA_VERSION,
     create_all_tables,
     run_migrations,
 )
 
 
 @pytest.fixture
-def conn() -> duckdb.DuckDBPyConnection:
+def conn() -> Generator[duckdb.DuckDBPyConnection, None, None]:
     connection = duckdb.connect(":memory:")
     create_all_tables(connection)
     yield connection
     connection.close()
-
-
-def test_schema_version_is_4() -> None:
-    assert SCHEMA_VERSION == 4
 
 
 def test_migration_v4_creates_expected_indexes(conn: duckdb.DuckDBPyConnection) -> None:

@@ -22,7 +22,8 @@ _INSERT_COLUMNS = (
     "avg_confidence, total_engagement, "
     "total_likes, total_shares, total_replies, total_views, "
     "top_hashtags, top_topics, platforms, "
-    "ai_version, created_at"
+    "ai_version, source_crawl_run_id, enrichment_job_id, lineage_updated_at, "
+    "created_at"
 )
 
 _SELECT_COLUMNS = _INSERT_COLUMNS
@@ -74,6 +75,9 @@ def _row_to_gold_campaign_summary(row: tuple[object, ...]) -> GoldCampaignSummar
         raw_top_topics,
         raw_platforms,
         raw_ai_version,
+        raw_source_crawl_run_id,
+        raw_enrichment_job_id,
+        raw_lineage_updated_at,
         raw_created_at,
     ) = row
 
@@ -97,6 +101,11 @@ def _row_to_gold_campaign_summary(row: tuple[object, ...]) -> GoldCampaignSummar
         top_topics=_resolve_str_list(raw_top_topics),
         platforms=_resolve_str_list(raw_platforms),
         ai_version=int(str(raw_ai_version)),
+        source_crawl_run_id=str(raw_source_crawl_run_id)
+        if raw_source_crawl_run_id is not None
+        else None,
+        enrichment_job_id=str(raw_enrichment_job_id) if raw_enrichment_job_id is not None else None,
+        lineage_updated_at=_resolve_datetime(raw_lineage_updated_at),
         created_at=_resolve_datetime(raw_created_at) or datetime.now(),
     )
 
@@ -122,6 +131,9 @@ def _summary_to_params(summary: GoldCampaignSummary) -> tuple[object, ...]:
         summary.top_topics,
         summary.platforms,
         summary.ai_version,
+        summary.source_crawl_run_id,
+        summary.enrichment_job_id,
+        summary.lineage_updated_at,
         summary.created_at,
     )
 
@@ -139,7 +151,7 @@ class DuckDBGoldCampaignSummaryRepository:
             f"""
             INSERT INTO {_TABLE}
                 ({_INSERT_COLUMNS})
-            VALUES ({",".join(["?"] * 20)})
+            VALUES ({",".join(["?"] * 23)})
             """,
             list(_summary_to_params(summary)),
         )

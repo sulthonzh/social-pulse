@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import structlog
@@ -7,8 +8,6 @@ import structlog
 from src.domain.entities.gold_post_search import GoldPostSearch
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from src.domain.interfaces import (
         AIEnrichmentRepository,
         EnrichedPostRepository,
@@ -36,7 +35,11 @@ class BuildPostSearch:
         search_request_id: str,
         keyword: str,
         since: datetime | None = None,
+        *,
+        source_crawl_run_id: str | None = None,
+        enrichment_job_id: str | None = None,
     ) -> int:
+        lineage_ts = datetime.now(UTC)
         total_inserted = 0
         offset = 0
 
@@ -87,6 +90,9 @@ class BuildPostSearch:
                     reply_count=post.reply_count,
                     view_count=post.view_count,
                     ai_version=enrichment.ai_version if enrichment else 1,
+                    source_crawl_run_id=source_crawl_run_id,
+                    enrichment_job_id=enrichment_job_id,
+                    lineage_updated_at=lineage_ts,
                 )
                 gold_posts.append(gold_post)
 
