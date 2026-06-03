@@ -95,7 +95,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Build runtime image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
@@ -105,7 +105,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
@@ -124,7 +124,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Build runtime image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
@@ -136,7 +136,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile
