@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
@@ -11,17 +11,6 @@ if TYPE_CHECKING:
     from openai import AsyncOpenAI
 
 logger = structlog.get_logger()
-
-
-class _AsyncOpenAIClient(Protocol):
-    async def chat_completions_create(
-        self,
-        *,
-        model: str,
-        messages: list[dict[str, str]],
-        response_format: dict[str, str] | None = None,
-        temperature: float = 0.0,
-    ) -> Any: ...
 
 
 class OpenAIClient:

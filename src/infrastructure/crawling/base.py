@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -9,8 +8,6 @@ if TYPE_CHECKING:
 
     from src.domain.entities.raw_post import RawPost
     from src.domain.value_objects.platform import Platform
-
-logger = logging.getLogger(__name__)
 
 
 class BaseCrawler(ABC):
