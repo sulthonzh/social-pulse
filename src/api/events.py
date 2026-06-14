@@ -77,5 +77,4 @@ class EventBus:
         self._queues.pop(run_id, None)
 
 
-# Global singleton
 event_bus = EventBus()
