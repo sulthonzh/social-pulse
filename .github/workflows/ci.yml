@@ -174,7 +174,7 @@ jobs:
       - name: Upload runtime SARIF results
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-runtime-results.sarif
           category: trivy-runtime
@@ -182,7 +182,7 @@ jobs:
       - name: Upload API SARIF results
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-api-results.sarif
           category: trivy-api
