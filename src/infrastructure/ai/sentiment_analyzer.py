@@ -32,7 +32,6 @@ class TransformerSentimentAnalyzer:
     ) -> None:
         self._model_name = model_name
         self._pipeline: _PipelineCallable | None = pipeline
-        self._loaded = pipeline is not None
 
     def _ensure_pipeline(self) -> _PipelineCallable:
         if self._pipeline is None:
@@ -46,7 +45,6 @@ class TransformerSentimentAnalyzer:
                     top_k=3,
                 ),
             )
-            self._loaded = True
         return self._pipeline
 
     def _get_model_version(self) -> str:

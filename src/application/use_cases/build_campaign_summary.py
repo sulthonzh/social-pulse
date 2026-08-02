@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import structlog
 
@@ -50,7 +51,7 @@ class BuildCampaignSummary:
             summary = GoldCampaignSummary(
                 search_request_id=posts[0].search_request_id
                 if posts
-                else __import__("uuid").UUID("00000000-0000-0000-0000-000000000000"),
+                else UUID("00000000-0000-0000-0000-000000000000"),
                 keyword="",
                 start_date=start_date,
                 end_date=end_date,

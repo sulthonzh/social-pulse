@@ -128,5 +128,4 @@ class MetricsCollector:
             self._started_at = datetime.now(UTC)
 
 
-# Module-level singleton
 metrics = MetricsCollector()
