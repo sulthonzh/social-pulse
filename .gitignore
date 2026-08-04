@@ -63,4 +63,5 @@ development-phases/
 
 .claude/
 
-*.log
+*.log.mypy_cache/
+coverage/
