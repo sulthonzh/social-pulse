@@ -13,7 +13,7 @@ permissions:
 jobs:
   release-please:
     name: Release Please
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, svr1]
     timeout-minutes: 15
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -27,7 +27,7 @@ jobs:
 
   deploy:
     name: Deploy to GHCR
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, svr1]
     timeout-minutes: 15
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
